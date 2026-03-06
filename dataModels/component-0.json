@@ -1,0 +1,421 @@
+{
+  "header": {
+    "id": "masterDataFlowConfiguration",
+    "name": "MasterDataFlowConfiguration",
+    "description": "Used to orchestrate Master Data Imports\n\nTopic strings should be formatted as ${System Name}.${Source of Data}.import",
+    "dataModelKindId": "reference"
+  },
+  "version": {
+    "id": "cl8byi59101in0155gns23yix",
+    "number": "14",
+    "dataModelId": "masterDataFlowConfiguration",
+    "modelDefinition": {
+      "name": "MasterDataFlowConfiguration",
+      "metadata": {
+        "mfgx": {
+          "module": {
+            "id": "orchestration",
+            "group": {
+              "id": "system"
+            }
+          },
+          "exposed": true,
+          "mutable": true,
+          "mutations": {
+            "create": true,
+            "update": true,
+            "del": true
+          },
+          "dataChangeCapture": {
+            "exposed": true,
+            "retentionDays": 120
+          },
+          "labelField": "label",
+          "triggers": {
+            "update": "(\n  $doc := $doc ? $doc : $;\n  /* $where := {\"id\": id}; */\n  $output := $query({\"statement\":'query getConnection($connectionId: String, $masterDataFlowConfigId: String!) {\n    connection(where: {id: {_eq: $connectionId}}) {\n      edges {\n        node {\n          name\n          connector {\n            name\n          }\n        }\n      }\n    }\n    masterDataFlowConfiguration(where: {id: {_eq: $masterDataFlowConfigId }}) {\n      edges {\n        node {\n          connection {\n            name\n            connector {\n              name\n            }\n          }\n        }\n      }\n    }\n  }\n  ',\"variables\":{\n    \"connectionId\": $isNilOrEmpty($doc.connectionId) ? \"A_CONNECTION_THAT_DOESNT_EXIST\" : $doc.connectionId,\n    \"masterDataFlowConfigId\": $where.id\n  }}).{\n    \"newConnection\": connection.edges[0].node,\n    \"masterDataFlowConfig\": masterDataFlowConfiguration.edges[0].node\n  };\n  \n  $returnValue := function($beforeVal,$afterVal) {\n    $isNilOrEmpty($afterVal) ? $beforeVal : $afterVal\n  };\n\n  $merge(\n    [\n      $doc,\n      {\n        \"label\": $join(\n        [\n          $returnValue(\n            $output.masterDataFlowConfig.connection.connector.name,\n            $output.newConnection.connector.name\n          ),\n          $returnValue(\n            $output.masterDataFlowConfig.connection.name,\n            $output.newConnection.name\n          )\n        ],\n        \" - \")\n      }\n    ]\n  );\n)"
+          }
+        },
+        "mongo": {
+          "collection": "masterDataFlowConfiguration"
+        },
+        "graphql": {
+          "type": "Object"
+        }
+      },
+      "kind": "Reference",
+      "fields": [
+        {
+          "name": "id",
+          "type": "ID!",
+          "description": "The primary unique ID of the record.  Every model should have an id field.",
+          "metadata": {
+            "mfgx": {
+              "mutations": {
+                "create": {
+                  "include": true
+                },
+                "update": {
+                  "include": false
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              }
+            },
+            "unique": true
+          }
+        },
+        {
+          "name": "active",
+          "type": "Boolean!",
+          "description": "The active flag determines if this should be run on the schedule for the import.",
+          "metadata": {
+            "mfgx": {
+              "mutations": {
+                "create": {
+                  "include": true
+                },
+                "update": {
+                  "include": true
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              },
+              "defaultValue": false
+            },
+            "unique": false
+          }
+        },
+        {
+          "name": "dataFlowConfiguration",
+          "type": "JSON!",
+          "description": "This JSON Field is utilized as the sort order of the flows to run and provides configuration for the data flow.",
+          "metadata": {
+            "mfgx": {
+              "mutations": {
+                "create": {
+                  "include": true
+                },
+                "update": {
+                  "include": true
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              },
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "flows": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "dataFlow": {
+                          "type": "object"
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "label": "Pagination",
+                          "properties": {
+                            "defaultRowLimit": {
+                              "type": "integer"
+                            }
+                          },
+                          "additionalProperties": true
+                        },
+                        "filters": {
+                          "type": "array",
+                          "maxItems": 1,
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "modifiedAfter": {
+                                "type": [
+                                  "object",
+                                  "null"
+                                ]
+                              },
+                              "modifiedBefore": {
+                                "type": [
+                                  "object",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [],
+                            "additionalProperties": true
+                          }
+                        },
+                        "active": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "dataFlow",
+                        "active",
+                        "pagination"
+                      ],
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "required": [
+                  "flows"
+                ]
+              }
+            },
+            "unique": false
+          }
+        },
+        {
+          "name": "topicPrefix",
+          "type": "String!",
+          "description": "",
+          "metadata": {
+            "mfgx": {
+              "mutations": {
+                "create": {
+                  "include": true
+                },
+                "update": {
+                  "include": true
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              },
+              "defaultExpression": "\"fill.in.your.topic.prefix\""
+            },
+            "unique": false
+          }
+        },
+        {
+          "name": "connectionConfiguration",
+          "type": "JSON",
+          "description": "Provides additional configuration for the connection used.",
+          "metadata": {
+            "mfgx": {
+              "mutations": {
+                "create": {
+                  "include": true
+                },
+                "update": {
+                  "include": true
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              }
+            },
+            "unique": false
+          }
+        },
+        {
+          "name": "connectionConfigurationSchema",
+          "type": "JSON",
+          "description": "Defines what fields can be provided for the connection",
+          "metadata": {
+            "mfgx": {
+              "mutations": {
+                "create": {
+                  "include": true
+                },
+                "update": {
+                  "include": true
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              }
+            },
+            "unique": false
+          }
+        },
+        {
+          "name": "dataFlowConfigurationSchema",
+          "type": "JSON",
+          "description": "Defines the inputs for the Data Flow Configuration",
+          "metadata": {
+            "mfgx": {
+              "mutations": {
+                "create": {
+                  "include": true
+                },
+                "update": {
+                  "include": true
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              },
+              "schema": {}
+            },
+            "unique": false
+          }
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "description": "",
+          "metadata": {
+            "mfgx": {
+              "mutations": {
+                "create": {
+                  "include": true
+                },
+                "update": {
+                  "include": true
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              }
+            },
+            "unique": false
+          }
+        },
+        {
+          "name": "label",
+          "type": "String",
+          "description": "Concatenates the Connector Name and Connection Name\n\nConnector Name - Connection Name",
+          "metadata": {
+            "mfgx": {
+              "mutations": {
+                "create": {
+                  "include": false
+                },
+                "update": {
+                  "include": false
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              },
+              "defaultValue": "Plex OBDC"
+            },
+            "unique": false
+          }
+        },
+        {
+          "name": "note",
+          "type": "String",
+          "description": "This field can be used to take notes on the configuration you have setup.",
+          "metadata": {
+            "mfgx": {
+              "mutations": {
+                "create": {
+                  "include": true
+                },
+                "update": {
+                  "include": true
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              },
+              "defaultExpression": "\"\""
+            },
+            "unique": false
+          }
+        },
+        {
+          "name": "connection",
+          "description": "",
+          "type": "Connection",
+          "metadata": {
+            "mfgx": {
+              "relation": {
+                "fields": {
+                  "from": "connectionId",
+                  "to": "id"
+                }
+              },
+              "mutations": {
+                "create": {
+                  "include": true
+                },
+                "update": {
+                  "include": true
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              }
+            },
+            "unique": false
+          }
+        },
+        {
+          "name": "connectionId",
+          "type": "ID",
+          "description": "The connection the requests will be run against",
+          "metadata": {
+            "mfgx": {
+              "mutations": {
+                "create": {
+                  "include": true
+                },
+                "update": {
+                  "include": true
+                }
+              },
+              "queries": {
+                "include": true
+              },
+              "where": {
+                "include": true
+              }
+            },
+            "unique": false
+          }
+        }
+      ],
+      "description": "Used to orchestrate Master Data Imports\n\nTopic strings should be formatted as ${System Name}.${Source of Data}.import"
+    }
+  },
+  "migration": "$",
+  "migrations": [
+    {
+      "dataModelVersionId": "cl8byi59101in0155gns23yix",
+      "dataModelVersion": {
+        "number": "14"
+      },
+      "mappingExpression": "$"
+    }
+  ]
+}

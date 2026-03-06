@@ -1,0 +1,1599 @@
+{
+  "header": {
+    "id": "masterDataFlowConfigurationTopicCreator",
+    "name": "Master Data Flow Configuration Topic Creator",
+    "description": "This flow will take in a Master Data Flow Configuration ID and create the topics necessary for each data flow.",
+    "active": true,
+    "dataFlowTypeId": "System",
+    "moduleId": null
+  },
+  "version": {
+    "id": "cl835eyvq001301a6bq3c9a6w",
+    "number": "0.0.3",
+    "description": "- Wrapped response in message",
+    "dataFlowId": "masterDataFlowConfigurationTopicCreator",
+    "flow": {
+      "id": "cl835eyvq001301a6bq3c9a6w",
+      "name": "Master Data Flow Configuration Topic Creator",
+      "type": "System",
+      "nodes": [
+        {
+          "id": "16a062a1-ae98-4699-b2f4-3f846cbbdc73",
+          "name": "Request",
+          "type": "request",
+          "data": {
+            "nextNodes": [
+              "11aa79ac-b9a8-46a2-9be0-c9010070b588"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "c97132eb-f7a0-409b-a95e-8e3654236b33",
+          "name": "Query Master Data Flow Configuration",
+          "type": "query",
+          "data": {
+            "api": "application",
+            "variablesTransform": "{\n  \"where\": {\n    \"id\": {\n      \"_eq\": $state.context.CONSTANTS.PARAMETERS.MASTER_DATA_FLOW_CONFIG_ID\n    }\n  }\n}",
+            "query": "query Query($where: MasterDataFlowConfigurationWhereInput, $orderBy: [MasterDataFlowConfigurationOrderByInput!], $first: Int, $after: String) {\n  masterDataFlowConfiguration(where: $where, orderBy: $orderBy, first: $first, after: $after) {\n    edges {\n      node {\n        id\n        dataFlowConfiguration\n        topicPrefix\n      }\n    }\n  }\n}\n",
+            "nextNodes": [
+              "4fa1332e-8c8d-4fa5-9bb9-45e8bb2dd922"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "11aa79ac-b9a8-46a2-9be0-c9010070b588",
+          "name": "Validate Request",
+          "type": "validate",
+          "data": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "masterDataFlowConfigId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "masterDataFlowConfigId"
+              ],
+              "additionalProperties": false
+            },
+            "nextNodes": [
+              "f22301fd-abc8-4c51-8a04-9370f1f3dd9e"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "f22301fd-abc8-4c51-8a04-9370f1f3dd9e",
+          "name": "Set Initial Context",
+          "type": "setContext",
+          "data": {
+            "transform": "{\n  \"CONSTANTS\": {\n    \"PARAMETERS\": {      \n      \"MASTER_DATA_FLOW_CONFIG_ID\": masterDataFlowConfigId\n    }\n  }\n}",
+            "nextNodes": [
+              "c97132eb-f7a0-409b-a95e-8e3654236b33"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "4fa1332e-8c8d-4fa5-9bb9-45e8bb2dd922",
+          "name": "Was the requested master data flow config found?",
+          "type": "ifElse",
+          "data": {
+            "onFalseNextNodes": [
+              "c4189924-47f7-47ba-a9dc-46b599ed570a"
+            ],
+            "transform": "$count(masterDataFlowConfiguration.edges[0].node) = 1",
+            "onTrueNextNodes": [
+              "9a20ba7d-a034-4f1d-9ff6-59aad471dcee"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "c4189924-47f7-47ba-a9dc-46b599ed570a",
+          "name": "Throw Error for Inactive Master Data Flow Configuration",
+          "type": "transform",
+          "data": {
+            "transform": "$throw(\n  \"The requested Master Data Flow Configuration: \" & $state.context.CONSTANTS.PARAMETERS.MASTER_DATA_FLOW_CONFIG_ID & \" was not found.\",\n  {\n    \"info\": $state.context\n  }\n)",
+            "nextNodes": []
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "9a20ba7d-a034-4f1d-9ff6-59aad471dcee",
+          "name": "Merge Master Data Flow Configuration To Context",
+          "type": "mergeContext",
+          "data": {
+            "transform": "{\n  \"CONSTANTS\": {\n    \"masterDataFlowConfiguration\": masterDataFlowConfiguration.edges.node~>| $ | \n      {\n        \"connectionName\": connection.name,\n        \"dataFlowConfiguration\": dataFlowConfiguration~>| $ | { \n          \"flows\": [\n            (\n              $flows := [flows];\n              $flows~>| $ | {\n                \"id\": dataFlow.id\n              }|\n            )\n          ]\n        } |\n      },\n      [\"connection\"]\n    |\n  }\n}",
+            "nextNodes": [
+              "6d59817a-2967-4830-9bba-0a922892cd0f"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "f588fdf5-8e64-4978-8f63-ee806d6694f2",
+          "name": "Query Topics",
+          "type": "query",
+          "data": {
+            "api": "application",
+            "variablesTransform": "(\n  $REQUIRED_TOPICS := $state.context.REQUIRED_TOPICS;\n  \n  {\n    \"where\": {\n      \"name\": {\n        \"_in\": [\n          $REQUIRED_TOPICS.topicString\n        ]\n      }\n    }\n  };\n)",
+            "query": "query Query($where: TopicWhereInput, $orderBy: [TopicOrderByInput!], $first: Int, $after: String) {\n  topic(where: $where, orderBy: $orderBy, first: $first, after: $after) {\n    edges {\n      node {\n        name\n      }\n    }\n  }\n}\n",
+            "nextNodes": [
+              "9e1ca261-361e-4633-88fa-eeea0d21d94f"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "6d59817a-2967-4830-9bba-0a922892cd0f",
+          "name": "Merge Required Topics Into Context",
+          "type": "mergeContext",
+          "data": {
+            "nextNodes": [
+              "f588fdf5-8e64-4978-8f63-ee806d6694f2"
+            ],
+            "transform": "(\n  $CONSTANTS := $state.context.CONSTANTS;\n  $MASTER_DATA_FLOW_CONFIGURATION := $CONSTANTS.masterDataFlowConfiguration;\n  $TOPIC_PREFIX := $MASTER_DATA_FLOW_CONFIGURATION.topicPrefix;\n\n  $topicsFromInput := function($topicPrefix,$dataFlowConfiguration) {\n    $dataFlowConfiguration.flows.(\n      $flow := $;\n      [\n        {\n          \"flowConfig\": $flow,\n          \"type\": \"starting\",\n          \"topicString\": $join(\n            [\n              $topicPrefix,\n              $flow.dataFlow.id\n            ],\n            \".\"\n          )\n        },\n        {\n          \"flowConfig\": $flow,\n          \"type\": \"pagination\",\n          \"topicString\":$join(\n            [\n              $topicPrefix,\n              $flow.dataFlow.id,\n              \"paginate\"\n            ],\n            \".\"\n          )\n        }\n      ]\n    )\n  };\n\n  {\n    \"REQUIRED_TOPICS\": $topicsFromInput($TOPIC_PREFIX,$MASTER_DATA_FLOW_CONFIGURATION.dataFlowConfiguration)\n  };\n)"
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "9e1ca261-361e-4633-88fa-eeea0d21d94f",
+          "name": "Merge Existing Topics Into Context",
+          "type": "mergeContext",
+          "data": {
+            "transform": "{\n  \"EXISTING_TOPICS\": [topic.edges.node.name]\n}",
+            "nextNodes": [
+              "3170552c-d300-43ee-aebd-f17583d7a2b7"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "3170552c-d300-43ee-aebd-f17583d7a2b7",
+          "name": "Topic Diff",
+          "type": "transform",
+          "data": {
+            "transform": "$filter(\n  $state.context.REQUIRED_TOPICS,\n  function($v){\n    $not($v.topicString in [$state.context.EXISTING_TOPICS])\n  }\n)",
+            "nextNodes": [
+              "1842f73c-8cb6-4085-872a-2237e380b122"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "1842f73c-8cb6-4085-872a-2237e380b122",
+          "name": "Merge Context",
+          "type": "mergeContext",
+          "data": {
+            "transform": "{\n  \"TOPICS_TO_ADD\": [$]\n}",
+            "nextNodes": [
+              "5448101c-2ac6-4714-b823-f523a025fa13"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "5448101c-2ac6-4714-b823-f523a025fa13",
+          "name": "Upsert Topics",
+          "type": "mutate",
+          "data": {
+            "api": "Application",
+            "variablesTransform": "{\n  \"payload\": [\n    [\n      $[type = \"starting\"].{\n        \"where\": {\n          \"name\": topicString\n        },\n        \"create\": {\n          \"name\": topicString,\n          \"description\": \"Topic used for the \" & $upperFirst($split(flowConfig.dataFlow.id,\"From\")[0]) & \" import.\",\n          \"valueSchema\": {}\n        },\n        \"update\": {\n          \"description\": \"Topic used for the \" & $upperFirst($split(flowConfig.dataFlow.id,\"From\")[0]) & \" import.\"\n        }\n      },\n      $[type = \"pagination\"].{\n        \"where\": {\n          \"name\": topicString\n        },\n        \"create\": {\n          \"name\": topicString,\n          \"description\": \"Topic used for pagination in the \" & $upperFirst($split(flowConfig.dataFlow.id,\"From\")[0]) & \" import.\",\n          \"valueSchema\": {}\n        },\n        \"update\": {\n          \"description\": \"Topic used for pagination in the \" & $upperFirst($split(flowConfig.dataFlow.id,\"From\")[0]) & \" import.\"\n        }\n      }\n    ]\n  ]~>$flatten\n}",
+            "mutation": "mutation($payload: [TopicUpsertPayloadInput!]! ){\n  upsertTopic(payload : $payload){\n    id\n    name\n  }\n}",
+            "nextNodes": [
+              "50f6d6b6-c5b2-4d75-9cce-95d734cf568f"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "50f6d6b6-c5b2-4d75-9cce-95d734cf568f",
+          "name": "Response",
+          "type": "response",
+          "data": {
+            "responseTransform": "{\n  \"message\": $count([upsertTopic.name]) > 0 ? \"Created topics: \" & $join([upsertTopic.name],\",\") : \"No topics to create\"\n}"
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        }
+      ],
+      "version": "0.0.2"
+    },
+    "diagram": {
+      "id": "cl835eyvq001301a6bq3c9a6w",
+      "offsetX": -2282.1,
+      "offsetY": -9.08,
+      "zoom": 95,
+      "gridSize": 5,
+      "layers": [
+        {
+          "id": "ddbb6dcb-f125-4942-affd-cd447fc24aee",
+          "type": "diagram-links",
+          "isSvg": true,
+          "transformed": true,
+          "models": {
+            "1dfa3755-cd15-4f67-a0e7-401deb51627e": {
+              "points": [
+                {
+                  "id": "0d6c81ad-4c9b-4189-aaea-03fe5e2e66b2",
+                  "type": "point",
+                  "selected": true,
+                  "x": 273.98,
+                  "y": 344.73
+                },
+                {
+                  "id": "8e3cffed-a76a-4bed-b8e1-7584ec5d86a7",
+                  "type": "point",
+                  "selected": true,
+                  "x": 310,
+                  "y": 344.73
+                }
+              ],
+              "id": "1dfa3755-cd15-4f67-a0e7-401deb51627e",
+              "type": "default",
+              "selected": false,
+              "source": "8a0ea9a1-e9e7-4ca9-9dd6-9aef8b97d7a7",
+              "sourcePort": "cl833ws410007356e3ynesd6k",
+              "target": "11aa79ac-b9a8-46a2-9be0-c9010070b588",
+              "targetPort": "cl833y8t5002z356edklx8tqr",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "94ae71f3-3d33-4326-bf32-d1842d3d13d1": {
+              "points": [
+                {
+                  "id": "ba35900b-6d01-48ce-ad99-7ef2ce3e5237",
+                  "type": "point",
+                  "selected": true,
+                  "x": 464,
+                  "y": 344.73
+                },
+                {
+                  "id": "b25a23e1-985b-4991-828d-0135469be1c6",
+                  "type": "point",
+                  "selected": true,
+                  "x": 500,
+                  "y": 344.73
+                }
+              ],
+              "id": "94ae71f3-3d33-4326-bf32-d1842d3d13d1",
+              "type": "default",
+              "selected": false,
+              "source": "11aa79ac-b9a8-46a2-9be0-c9010070b588",
+              "sourcePort": "cl833y8t50031356epbtpdfw9",
+              "target": "f22301fd-abc8-4c51-8a04-9370f1f3dd9e",
+              "targetPort": "cl833zl9f0052356ecgzghj8i",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "a603af88-396e-46d7-86df-3774538346ad": {
+              "points": [
+                {
+                  "id": "2b87f69a-ca4b-4f41-8894-2578acfe2893",
+                  "type": "point",
+                  "selected": true,
+                  "x": 654,
+                  "y": 344.73
+                },
+                {
+                  "id": "01065d44-98d7-4c13-847b-edc3a5a9b79a",
+                  "type": "point",
+                  "selected": true,
+                  "x": 695,
+                  "y": 344.73
+                }
+              ],
+              "id": "a603af88-396e-46d7-86df-3774538346ad",
+              "type": "default",
+              "selected": false,
+              "source": "f22301fd-abc8-4c51-8a04-9370f1f3dd9e",
+              "sourcePort": "cl833zl9f0054356e1fxrdhf6",
+              "target": "c97132eb-f7a0-409b-a95e-8e3654236b33",
+              "targetPort": "cl833y8t4002n356e30gpna71",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "ae4bf8af-f3f8-42e3-8792-0564ef741776": {
+              "points": [
+                {
+                  "id": "70639932-4f73-4e34-959d-f96248a73cf4",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1288.83,
+                  "y": 369.89
+                },
+                {
+                  "id": "a747ebc5-00e7-4ff4-8057-269470dfde0b",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1325,
+                  "y": 414.73
+                }
+              ],
+              "id": "ae4bf8af-f3f8-42e3-8792-0564ef741776",
+              "type": "default",
+              "selected": false,
+              "source": "4fa1332e-8c8d-4fa5-9bb9-45e8bb2dd922",
+              "sourcePort": "cl83409ga006b356esaz01o6o",
+              "target": "c4189924-47f7-47ba-a9dc-46b599ed570a",
+              "targetPort": "cl83409gc006l356edv6kl0gv",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "cd0f1caf-9fb4-4c57-80bf-987f95fe3965": {
+              "points": [
+                {
+                  "id": "19ea9c9b-c97f-45e0-98ec-2f106b987539",
+                  "type": "point",
+                  "selected": true,
+                  "x": 946.72,
+                  "y": 344.73
+                },
+                {
+                  "id": "5b7bf0bd-fb3f-4d01-b989-7471ba837ff1",
+                  "type": "point",
+                  "selected": true,
+                  "x": 970,
+                  "y": 344.73
+                }
+              ],
+              "id": "cd0f1caf-9fb4-4c57-80bf-987f95fe3965",
+              "type": "default",
+              "selected": false,
+              "source": "c97132eb-f7a0-409b-a95e-8e3654236b33",
+              "sourcePort": "cl833y8t4002p356exw4ko4o5",
+              "target": "4fa1332e-8c8d-4fa5-9bb9-45e8bb2dd922",
+              "targetPort": "cl83409ga0067356em7bpme57",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "729b14ab-8120-4158-adf6-4908b85ddfb7": {
+              "points": [
+                {
+                  "id": "f8306590-6563-45bf-b68a-cd157df24e36",
+                  "type": "point",
+                  "x": 274,
+                  "y": 404.73
+                },
+                {
+                  "id": "2cb0ad65-1955-4176-a58d-b95ea2746ae2",
+                  "type": "point",
+                  "x": 310,
+                  "y": 344.73
+                }
+              ],
+              "id": "729b14ab-8120-4158-adf6-4908b85ddfb7",
+              "type": "default",
+              "selected": false,
+              "source": "16a062a1-ae98-4699-b2f4-3f846cbbdc73",
+              "sourcePort": "cl833xlcw001x356e9eu36si8",
+              "target": "11aa79ac-b9a8-46a2-9be0-c9010070b588",
+              "targetPort": "cl833y8t5002z356edklx8tqr",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "f20cf310-6edc-461c-bb18-85973a15b951": {
+              "points": [
+                {
+                  "id": "25631e79-1a7e-48a1-8203-c99e41cfe1c7",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1288.83,
+                  "y": 344.73
+                },
+                {
+                  "id": "9755bde0-9e6e-4814-b056-0fbe0b4b9739",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1320,
+                  "y": 344.73
+                }
+              ],
+              "id": "f20cf310-6edc-461c-bb18-85973a15b951",
+              "type": "default",
+              "selected": false,
+              "source": "4fa1332e-8c8d-4fa5-9bb9-45e8bb2dd922",
+              "sourcePort": "cl83409ga0069356exfi1uxdt",
+              "target": "9a20ba7d-a034-4f1d-9ff6-59aad471dcee",
+              "targetPort": "cl8341enk0084356eo25gd0nb",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "e37170fa-354c-406a-9c64-51f4ef599384": {
+              "points": [
+                {
+                  "id": "3d22ce4f-0d86-45f7-9fd4-9f4ccf350ad7",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1903.56,
+                  "y": 344.73
+                },
+                {
+                  "id": "2ca6a567-cf88-46e7-afc9-2d8636681eec",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1940,
+                  "y": 344.73
+                }
+              ],
+              "id": "e37170fa-354c-406a-9c64-51f4ef599384",
+              "type": "default",
+              "selected": false,
+              "source": "6d59817a-2967-4830-9bba-0a922892cd0f",
+              "sourcePort": "cl834bjwx003u356e0k5c2q3i",
+              "target": "f588fdf5-8e64-4978-8f63-ee806d6694f2",
+              "targetPort": "cl83441sm00ah356e33svu75u",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "7ec688ca-0392-45ee-83bf-b594a2b2f3d8": {
+              "points": [
+                {
+                  "id": "78ace93b-f1c7-4057-affd-636f12c5664b",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1636.47,
+                  "y": 344.73
+                },
+                {
+                  "id": "cf04e680-3d48-4e8c-86bf-ec13cdacbd3a",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1665,
+                  "y": 344.73
+                }
+              ],
+              "id": "7ec688ca-0392-45ee-83bf-b594a2b2f3d8",
+              "type": "default",
+              "selected": false,
+              "source": "9a20ba7d-a034-4f1d-9ff6-59aad471dcee",
+              "sourcePort": "cl8341enk0086356ewv7lmavr",
+              "target": "6d59817a-2967-4830-9bba-0a922892cd0f",
+              "targetPort": "cl834bjwx003s356es5q95fhd",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "6a3bf74e-ede0-4e4c-89d4-9f42eaf9e7be": {
+              "points": [
+                {
+                  "id": "ae463542-a0a1-4a2c-b6fc-7ecb05a9325f",
+                  "type": "point",
+                  "selected": true,
+                  "x": 2094,
+                  "y": 344.73
+                },
+                {
+                  "id": "31563b21-92b8-4e96-b9bf-d5461b825691",
+                  "type": "point",
+                  "selected": true,
+                  "x": 2130,
+                  "y": 344.73
+                }
+              ],
+              "id": "6a3bf74e-ede0-4e4c-89d4-9f42eaf9e7be",
+              "type": "default",
+              "selected": false,
+              "source": "f588fdf5-8e64-4978-8f63-ee806d6694f2",
+              "sourcePort": "cl83441sm00aj356e8f3u4icu",
+              "target": "9e1ca261-361e-4633-88fa-eeea0d21d94f",
+              "targetPort": "cl834e85f009j356eo6ied7ik",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "3b4a0e27-3cad-44d1-a6e7-b1931dedc019": {
+              "points": [
+                {
+                  "id": "3491123e-adc7-40a8-bfea-11ada48d8cb9",
+                  "type": "point",
+                  "selected": true,
+                  "x": 2363.44,
+                  "y": 344.73
+                },
+                {
+                  "id": "bccfdb08-6319-4fa4-9ed3-3d0d4c98ec50",
+                  "type": "point",
+                  "selected": true,
+                  "x": 2400,
+                  "y": 344.73
+                }
+              ],
+              "id": "3b4a0e27-3cad-44d1-a6e7-b1931dedc019",
+              "type": "default",
+              "selected": false,
+              "source": "9e1ca261-361e-4633-88fa-eeea0d21d94f",
+              "sourcePort": "cl834e85f009l356ekorej2vk",
+              "target": "3170552c-d300-43ee-aebd-f17583d7a2b7",
+              "targetPort": "cl834erko00bx356eqagau0ga",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "a4fe4ad3-c8d3-4d33-9f16-707ebcce40dc": {
+              "points": [
+                {
+                  "id": "3fc75f68-9c20-47ec-91ce-78d0ead17283",
+                  "type": "point",
+                  "selected": true,
+                  "x": 2554,
+                  "y": 344.73
+                },
+                {
+                  "id": "ac13b35f-abc2-4fad-a10c-74127cac71af",
+                  "type": "point",
+                  "selected": true,
+                  "x": 2590,
+                  "y": 344.73
+                }
+              ],
+              "id": "a4fe4ad3-c8d3-4d33-9f16-707ebcce40dc",
+              "type": "default",
+              "selected": false,
+              "source": "3170552c-d300-43ee-aebd-f17583d7a2b7",
+              "sourcePort": "cl834erko00bz356esvqmvsh3",
+              "target": "1842f73c-8cb6-4085-872a-2237e380b122",
+              "targetPort": "cl834itfs00gi356eaajxo9s2",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "fcafaadf-0aec-48e5-b063-a80784126125": {
+              "points": [
+                {
+                  "id": "61db8e7c-bb1d-4dbb-8123-69e33741b7d4",
+                  "type": "point",
+                  "selected": true,
+                  "x": 2744,
+                  "y": 344.73
+                },
+                {
+                  "id": "587127d8-e4e7-464f-94f7-8aaa08208e5c",
+                  "type": "point",
+                  "selected": true,
+                  "x": 2780,
+                  "y": 344.73
+                }
+              ],
+              "id": "fcafaadf-0aec-48e5-b063-a80784126125",
+              "type": "default",
+              "selected": false,
+              "source": "1842f73c-8cb6-4085-872a-2237e380b122",
+              "sourcePort": "cl834itfs00gk356eug77a0vs",
+              "target": "5448101c-2ac6-4714-b823-f523a025fa13",
+              "targetPort": "cl834n0c000od356elq84w0s6",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "799a4ee1-aa62-43a4-ac64-3b1a0fe425ae": {
+              "points": [
+                {
+                  "id": "bfd56627-4a8e-4938-9474-3cc914a532e2",
+                  "type": "point",
+                  "selected": true,
+                  "x": 2934,
+                  "y": 344.73
+                },
+                {
+                  "id": "6ef380d5-b91e-4440-b31c-c8f9febb1f84",
+                  "type": "point",
+                  "selected": true,
+                  "x": 2960,
+                  "y": 344.73
+                }
+              ],
+              "id": "799a4ee1-aa62-43a4-ac64-3b1a0fe425ae",
+              "type": "default",
+              "selected": false,
+              "source": "5448101c-2ac6-4714-b823-f523a025fa13",
+              "sourcePort": "cl834n0c000of356e9yuzij56",
+              "target": "50f6d6b6-c5b2-4d75-9cce-95d734cf568f",
+              "targetPort": "cl834v50f00te356equ4jnrlb",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            }
+          }
+        },
+        {
+          "id": "fba1bef4-e92c-431d-91b9-a40d2b76c624",
+          "type": "diagram-nodes",
+          "isSvg": false,
+          "transformed": true,
+          "models": {
+            "8a0ea9a1-e9e7-4ca9-9dd6-9aef8b97d7a7": {
+              "id": "8a0ea9a1-e9e7-4ca9-9dd6-9aef8b97d7a7",
+              "type": "debugSource",
+              "selected": false,
+              "x": 120,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl833ws410007356e3ynesd6k",
+                  "type": "default",
+                  "x": 265.98,
+                  "y": 336.73,
+                  "name": "cl833ws410008356ed4y7qzx8",
+                  "parentNode": "8a0ea9a1-e9e7-4ca9-9dd6-9aef8b97d7a7",
+                  "links": [
+                    "1dfa3755-cd15-4f67-a0e7-401deb51627e"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "payload": {
+                  "masterDataFlowConfigId": "DEFAULT_PLEX_ODBC_CONFIG"
+                },
+                "context": {},
+                "nextNodes": [
+                  "11aa79ac-b9a8-46a2-9be0-c9010070b588"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Source"
+            },
+            "16a062a1-ae98-4699-b2f4-3f846cbbdc73": {
+              "id": "16a062a1-ae98-4699-b2f4-3f846cbbdc73",
+              "type": "request",
+              "selected": false,
+              "x": 120,
+              "y": 365,
+              "ports": [
+                {
+                  "id": "cl833xlcw001x356e9eu36si8",
+                  "type": "default",
+                  "x": 266,
+                  "y": 396.73,
+                  "name": "cl833xlcw001y356egjs8b9zr",
+                  "parentNode": "16a062a1-ae98-4699-b2f4-3f846cbbdc73",
+                  "links": [
+                    "729b14ab-8120-4158-adf6-4908b85ddfb7"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Payload",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "nextNodes": [
+                  "11aa79ac-b9a8-46a2-9be0-c9010070b588"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Request"
+            },
+            "c97132eb-f7a0-409b-a95e-8e3654236b33": {
+              "id": "c97132eb-f7a0-409b-a95e-8e3654236b33",
+              "type": "query",
+              "selected": false,
+              "x": 695,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl833y8t4002n356e30gpna71",
+                  "type": "default",
+                  "x": 687,
+                  "y": 336.73,
+                  "name": "cl833y8t4002o356ep6q5z4fr",
+                  "parentNode": "c97132eb-f7a0-409b-a95e-8e3654236b33",
+                  "links": [
+                    "a603af88-396e-46d7-86df-3774538346ad"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl833y8t4002p356exw4ko4o5",
+                  "type": "default",
+                  "x": 938.72,
+                  "y": 336.73,
+                  "name": "cl833y8t4002q356ek09jaywd",
+                  "parentNode": "c97132eb-f7a0-409b-a95e-8e3654236b33",
+                  "links": [
+                    "cd0f1caf-9fb4-4c57-80bf-987f95fe3965"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "api": "application",
+                "variablesTransform": "{\n  \"where\": {\n    \"id\": {\n      \"_eq\": $state.context.CONSTANTS.PARAMETERS.MASTER_DATA_FLOW_CONFIG_ID\n    }\n  }\n}",
+                "query": "query Query($where: MasterDataFlowConfigurationWhereInput, $orderBy: [MasterDataFlowConfigurationOrderByInput!], $first: Int, $after: String) {\n  masterDataFlowConfiguration(where: $where, orderBy: $orderBy, first: $first, after: $after) {\n    edges {\n      node {\n        id\n        dataFlowConfiguration\n        topicPrefix\n      }\n    }\n  }\n}\n",
+                "nextNodes": [
+                  "4fa1332e-8c8d-4fa5-9bb9-45e8bb2dd922"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Query Master Data Flow Configuration"
+            },
+            "11aa79ac-b9a8-46a2-9be0-c9010070b588": {
+              "id": "11aa79ac-b9a8-46a2-9be0-c9010070b588",
+              "type": "validate",
+              "selected": false,
+              "x": 310,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl833y8t5002z356edklx8tqr",
+                  "type": "default",
+                  "x": 302,
+                  "y": 336.73,
+                  "name": "cl833y8t50030356eemycr0tq",
+                  "parentNode": "11aa79ac-b9a8-46a2-9be0-c9010070b588",
+                  "links": [
+                    "1dfa3755-cd15-4f67-a0e7-401deb51627e",
+                    "729b14ab-8120-4158-adf6-4908b85ddfb7"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl833y8t50031356epbtpdfw9",
+                  "type": "default",
+                  "x": 456,
+                  "y": 336.73,
+                  "name": "cl833y8t60032356env3hln3d",
+                  "parentNode": "11aa79ac-b9a8-46a2-9be0-c9010070b588",
+                  "links": [
+                    "94ae71f3-3d33-4326-bf32-d1842d3d13d1"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "masterDataFlowConfigId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "masterDataFlowConfigId"
+                  ],
+                  "additionalProperties": false
+                },
+                "nextNodes": [
+                  "f22301fd-abc8-4c51-8a04-9370f1f3dd9e"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Validate Request"
+            },
+            "f22301fd-abc8-4c51-8a04-9370f1f3dd9e": {
+              "id": "f22301fd-abc8-4c51-8a04-9370f1f3dd9e",
+              "type": "setContext",
+              "selected": false,
+              "x": 500,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl833zl9f0052356ecgzghj8i",
+                  "type": "default",
+                  "x": 492,
+                  "y": 336.73,
+                  "name": "cl833zl9f0053356e1gnyjcbk",
+                  "parentNode": "f22301fd-abc8-4c51-8a04-9370f1f3dd9e",
+                  "links": [
+                    "94ae71f3-3d33-4326-bf32-d1842d3d13d1"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl833zl9f0054356e1fxrdhf6",
+                  "type": "default",
+                  "x": 646,
+                  "y": 336.73,
+                  "name": "cl833zl9f0055356el6lzfffk",
+                  "parentNode": "f22301fd-abc8-4c51-8a04-9370f1f3dd9e",
+                  "links": [
+                    "a603af88-396e-46d7-86df-3774538346ad"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "transform": "{\n  \"CONSTANTS\": {\n    \"PARAMETERS\": {      \n      \"MASTER_DATA_FLOW_CONFIG_ID\": masterDataFlowConfigId\n    }\n  }\n}",
+                "nextNodes": [
+                  "c97132eb-f7a0-409b-a95e-8e3654236b33"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Set Initial Context"
+            },
+            "4fa1332e-8c8d-4fa5-9bb9-45e8bb2dd922": {
+              "id": "4fa1332e-8c8d-4fa5-9bb9-45e8bb2dd922",
+              "type": "ifElse",
+              "selected": false,
+              "x": 970,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl83409ga0067356em7bpme57",
+                  "type": "default",
+                  "x": 962,
+                  "y": 336.73,
+                  "name": "cl83409ga0068356ekwmf8g6r",
+                  "parentNode": "4fa1332e-8c8d-4fa5-9bb9-45e8bb2dd922",
+                  "links": [
+                    "cd0f1caf-9fb4-4c57-80bf-987f95fe3965"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl83409ga0069356exfi1uxdt",
+                  "type": "default",
+                  "x": 1280.83,
+                  "y": 336.73,
+                  "name": "cl83409ga006a356edhsw4qhu",
+                  "parentNode": "4fa1332e-8c8d-4fa5-9bb9-45e8bb2dd922",
+                  "links": [
+                    "f20cf310-6edc-461c-bb18-85973a15b951"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "True",
+                  "fieldPath": "data.onTrueNextNodes"
+                },
+                {
+                  "id": "cl83409ga006b356esaz01o6o",
+                  "type": "default",
+                  "x": 1280.83,
+                  "y": 361.89,
+                  "name": "cl83409ga006c356eefwrl2xd",
+                  "parentNode": "4fa1332e-8c8d-4fa5-9bb9-45e8bb2dd922",
+                  "links": [
+                    "ae4bf8af-f3f8-42e3-8792-0564ef741776"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "False",
+                  "fieldPath": "data.onFalseNextNodes"
+                }
+              ],
+              "data": {
+                "onFalseNextNodes": [
+                  "c4189924-47f7-47ba-a9dc-46b599ed570a"
+                ],
+                "transform": "$count(masterDataFlowConfiguration.edges[0].node) = 1",
+                "onTrueNextNodes": [
+                  "9a20ba7d-a034-4f1d-9ff6-59aad471dcee"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Was the requested master data flow config found?"
+            },
+            "c4189924-47f7-47ba-a9dc-46b599ed570a": {
+              "id": "c4189924-47f7-47ba-a9dc-46b599ed570a",
+              "type": "transform",
+              "selected": false,
+              "x": 1325,
+              "y": 375,
+              "ports": [
+                {
+                  "id": "cl83409gc006l356edv6kl0gv",
+                  "type": "default",
+                  "x": 1317,
+                  "y": 406.73,
+                  "name": "cl83409gc006m356eemrsdgp3",
+                  "parentNode": "c4189924-47f7-47ba-a9dc-46b599ed570a",
+                  "links": [
+                    "ae4bf8af-f3f8-42e3-8792-0564ef741776"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl83409gc006n356e2w8i0auz",
+                  "type": "default",
+                  "x": 1665,
+                  "y": 406.73,
+                  "name": "cl83409gc006o356efjgtnfgu",
+                  "parentNode": "c4189924-47f7-47ba-a9dc-46b599ed570a",
+                  "links": [],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "transform": "$throw(\n  \"The requested Master Data Flow Configuration: \" & $state.context.CONSTANTS.PARAMETERS.MASTER_DATA_FLOW_CONFIG_ID & \" was not found.\",\n  {\n    \"info\": $state.context\n  }\n)",
+                "nextNodes": []
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Throw Error for Inactive Master Data Flow Configuration"
+            },
+            "9a20ba7d-a034-4f1d-9ff6-59aad471dcee": {
+              "id": "9a20ba7d-a034-4f1d-9ff6-59aad471dcee",
+              "type": "mergeContext",
+              "selected": false,
+              "x": 1320,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl8341enk0084356eo25gd0nb",
+                  "type": "default",
+                  "x": 1312,
+                  "y": 336.73,
+                  "name": "cl8341enk0085356ej5x758ym",
+                  "parentNode": "9a20ba7d-a034-4f1d-9ff6-59aad471dcee",
+                  "links": [
+                    "f20cf310-6edc-461c-bb18-85973a15b951"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl8341enk0086356ewv7lmavr",
+                  "type": "default",
+                  "x": 1628.47,
+                  "y": 336.73,
+                  "name": "cl8341enk0087356e7px1aev8",
+                  "parentNode": "9a20ba7d-a034-4f1d-9ff6-59aad471dcee",
+                  "links": [
+                    "7ec688ca-0392-45ee-83bf-b594a2b2f3d8"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "transform": "{\n  \"CONSTANTS\": {\n    \"masterDataFlowConfiguration\": masterDataFlowConfiguration.edges.node~>| $ | \n      {\n        \"connectionName\": connection.name,\n        \"dataFlowConfiguration\": dataFlowConfiguration~>| $ | { \n          \"flows\": [\n            (\n              $flows := [flows];\n              $flows~>| $ | {\n                \"id\": dataFlow.id\n              }|\n            )\n          ]\n        } |\n      },\n      [\"connection\"]\n    |\n  }\n}",
+                "nextNodes": [
+                  "6d59817a-2967-4830-9bba-0a922892cd0f"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Merge Master Data Flow Configuration To Context"
+            },
+            "f588fdf5-8e64-4978-8f63-ee806d6694f2": {
+              "id": "f588fdf5-8e64-4978-8f63-ee806d6694f2",
+              "type": "query",
+              "selected": false,
+              "x": 1940,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl83441sm00ah356e33svu75u",
+                  "type": "default",
+                  "x": 1932,
+                  "y": 336.73,
+                  "name": "cl83441sm00ai356e25m1nv2h",
+                  "parentNode": "f588fdf5-8e64-4978-8f63-ee806d6694f2",
+                  "links": [
+                    "e37170fa-354c-406a-9c64-51f4ef599384"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl83441sm00aj356e8f3u4icu",
+                  "type": "default",
+                  "x": 2086,
+                  "y": 336.73,
+                  "name": "cl83441sm00ak356es5h7cyxx",
+                  "parentNode": "f588fdf5-8e64-4978-8f63-ee806d6694f2",
+                  "links": [
+                    "6a3bf74e-ede0-4e4c-89d4-9f42eaf9e7be"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "api": "application",
+                "variablesTransform": "(\n  $REQUIRED_TOPICS := $state.context.REQUIRED_TOPICS;\n  \n  {\n    \"where\": {\n      \"name\": {\n        \"_in\": [\n          $REQUIRED_TOPICS.topicString\n        ]\n      }\n    }\n  };\n)",
+                "query": "query Query($where: TopicWhereInput, $orderBy: [TopicOrderByInput!], $first: Int, $after: String) {\n  topic(where: $where, orderBy: $orderBy, first: $first, after: $after) {\n    edges {\n      node {\n        name\n      }\n    }\n  }\n}\n",
+                "nextNodes": [
+                  "9e1ca261-361e-4633-88fa-eeea0d21d94f"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Query Topics"
+            },
+            "6d59817a-2967-4830-9bba-0a922892cd0f": {
+              "id": "6d59817a-2967-4830-9bba-0a922892cd0f",
+              "type": "mergeContext",
+              "selected": false,
+              "x": 1665,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl834bjwx003s356es5q95fhd",
+                  "type": "default",
+                  "x": 1657,
+                  "y": 336.73,
+                  "name": "cl834bjwx003t356ex08vc2df",
+                  "parentNode": "6d59817a-2967-4830-9bba-0a922892cd0f",
+                  "links": [
+                    "7ec688ca-0392-45ee-83bf-b594a2b2f3d8"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl834bjwx003u356e0k5c2q3i",
+                  "type": "default",
+                  "x": 1895.56,
+                  "y": 336.73,
+                  "name": "cl834bjwx003v356e7ufvco6t",
+                  "parentNode": "6d59817a-2967-4830-9bba-0a922892cd0f",
+                  "links": [
+                    "e37170fa-354c-406a-9c64-51f4ef599384"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "nextNodes": [
+                  "f588fdf5-8e64-4978-8f63-ee806d6694f2"
+                ],
+                "transform": "(\n  $CONSTANTS := $state.context.CONSTANTS;\n  $MASTER_DATA_FLOW_CONFIGURATION := $CONSTANTS.masterDataFlowConfiguration;\n  $TOPIC_PREFIX := $MASTER_DATA_FLOW_CONFIGURATION.topicPrefix;\n\n  $topicsFromInput := function($topicPrefix,$dataFlowConfiguration) {\n    $dataFlowConfiguration.flows.(\n      $flow := $;\n      [\n        {\n          \"flowConfig\": $flow,\n          \"type\": \"starting\",\n          \"topicString\": $join(\n            [\n              $topicPrefix,\n              $flow.dataFlow.id\n            ],\n            \".\"\n          )\n        },\n        {\n          \"flowConfig\": $flow,\n          \"type\": \"pagination\",\n          \"topicString\":$join(\n            [\n              $topicPrefix,\n              $flow.dataFlow.id,\n              \"paginate\"\n            ],\n            \".\"\n          )\n        }\n      ]\n    )\n  };\n\n  {\n    \"REQUIRED_TOPICS\": $topicsFromInput($TOPIC_PREFIX,$MASTER_DATA_FLOW_CONFIGURATION.dataFlowConfiguration)\n  };\n)"
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Merge Required Topics Into Context"
+            },
+            "9e1ca261-361e-4633-88fa-eeea0d21d94f": {
+              "id": "9e1ca261-361e-4633-88fa-eeea0d21d94f",
+              "type": "mergeContext",
+              "selected": false,
+              "x": 2130,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl834e85f009j356eo6ied7ik",
+                  "type": "default",
+                  "x": 2122,
+                  "y": 336.73,
+                  "name": "cl834e85f009k356ei1urxzw2",
+                  "parentNode": "9e1ca261-361e-4633-88fa-eeea0d21d94f",
+                  "links": [
+                    "6a3bf74e-ede0-4e4c-89d4-9f42eaf9e7be"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl834e85f009l356ekorej2vk",
+                  "type": "default",
+                  "x": 2355.44,
+                  "y": 336.73,
+                  "name": "cl834e85f009m356euc6rdk9i",
+                  "parentNode": "9e1ca261-361e-4633-88fa-eeea0d21d94f",
+                  "links": [
+                    "3b4a0e27-3cad-44d1-a6e7-b1931dedc019"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "transform": "{\n  \"EXISTING_TOPICS\": [topic.edges.node.name]\n}",
+                "nextNodes": [
+                  "3170552c-d300-43ee-aebd-f17583d7a2b7"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Merge Existing Topics Into Context"
+            },
+            "3170552c-d300-43ee-aebd-f17583d7a2b7": {
+              "id": "3170552c-d300-43ee-aebd-f17583d7a2b7",
+              "type": "transform",
+              "selected": false,
+              "x": 2400,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl834erko00bx356eqagau0ga",
+                  "type": "default",
+                  "x": 2392,
+                  "y": 336.73,
+                  "name": "cl834erko00by356ewgvuyklq",
+                  "parentNode": "3170552c-d300-43ee-aebd-f17583d7a2b7",
+                  "links": [
+                    "3b4a0e27-3cad-44d1-a6e7-b1931dedc019"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl834erko00bz356esvqmvsh3",
+                  "type": "default",
+                  "x": 2546,
+                  "y": 336.73,
+                  "name": "cl834erko00c0356ef3jo71d4",
+                  "parentNode": "3170552c-d300-43ee-aebd-f17583d7a2b7",
+                  "links": [
+                    "a4fe4ad3-c8d3-4d33-9f16-707ebcce40dc"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "transform": "$filter(\n  $state.context.REQUIRED_TOPICS,\n  function($v){\n    $not($v.topicString in [$state.context.EXISTING_TOPICS])\n  }\n)",
+                "nextNodes": [
+                  "1842f73c-8cb6-4085-872a-2237e380b122"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Topic Diff"
+            },
+            "1842f73c-8cb6-4085-872a-2237e380b122": {
+              "id": "1842f73c-8cb6-4085-872a-2237e380b122",
+              "type": "mergeContext",
+              "selected": false,
+              "x": 2590,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl834itfs00gi356eaajxo9s2",
+                  "type": "default",
+                  "x": 2582,
+                  "y": 336.73,
+                  "name": "cl834itfs00gj356eeo5ymh4b",
+                  "parentNode": "1842f73c-8cb6-4085-872a-2237e380b122",
+                  "links": [
+                    "a4fe4ad3-c8d3-4d33-9f16-707ebcce40dc"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl834itfs00gk356eug77a0vs",
+                  "type": "default",
+                  "x": 2736,
+                  "y": 336.73,
+                  "name": "cl834itfs00gl356etftbuvmu",
+                  "parentNode": "1842f73c-8cb6-4085-872a-2237e380b122",
+                  "links": [
+                    "fcafaadf-0aec-48e5-b063-a80784126125"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "transform": "{\n  \"TOPICS_TO_ADD\": [$]\n}",
+                "nextNodes": [
+                  "5448101c-2ac6-4714-b823-f523a025fa13"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Merge Context"
+            },
+            "5448101c-2ac6-4714-b823-f523a025fa13": {
+              "id": "5448101c-2ac6-4714-b823-f523a025fa13",
+              "type": "mutate",
+              "selected": false,
+              "x": 2780,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl834n0c000od356elq84w0s6",
+                  "type": "default",
+                  "x": 2772,
+                  "y": 336.73,
+                  "name": "cl834n0c000oe356es440k1b8",
+                  "parentNode": "5448101c-2ac6-4714-b823-f523a025fa13",
+                  "links": [
+                    "fcafaadf-0aec-48e5-b063-a80784126125"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl834n0c000of356e9yuzij56",
+                  "type": "default",
+                  "x": 2926,
+                  "y": 336.73,
+                  "name": "cl834n0c000og356e1nnfjxju",
+                  "parentNode": "5448101c-2ac6-4714-b823-f523a025fa13",
+                  "links": [
+                    "799a4ee1-aa62-43a4-ac64-3b1a0fe425ae"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "api": "Application",
+                "variablesTransform": "{\n  \"payload\": [\n    [\n      $[type = \"starting\"].{\n        \"where\": {\n          \"name\": topicString\n        },\n        \"create\": {\n          \"name\": topicString,\n          \"description\": \"Topic used for the \" & $upperFirst($split(flowConfig.dataFlow.id,\"From\")[0]) & \" import.\",\n          \"valueSchema\": {}\n        },\n        \"update\": {\n          \"description\": \"Topic used for the \" & $upperFirst($split(flowConfig.dataFlow.id,\"From\")[0]) & \" import.\"\n        }\n      },\n      $[type = \"pagination\"].{\n        \"where\": {\n          \"name\": topicString\n        },\n        \"create\": {\n          \"name\": topicString,\n          \"description\": \"Topic used for pagination in the \" & $upperFirst($split(flowConfig.dataFlow.id,\"From\")[0]) & \" import.\",\n          \"valueSchema\": {}\n        },\n        \"update\": {\n          \"description\": \"Topic used for pagination in the \" & $upperFirst($split(flowConfig.dataFlow.id,\"From\")[0]) & \" import.\"\n        }\n      }\n    ]\n  ]~>$flatten\n}",
+                "mutation": "mutation($payload: [TopicUpsertPayloadInput!]! ){\n  upsertTopic(payload : $payload){\n    id\n    name\n  }\n}",
+                "nextNodes": [
+                  "50f6d6b6-c5b2-4d75-9cce-95d734cf568f"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Upsert Topics"
+            },
+            "50f6d6b6-c5b2-4d75-9cce-95d734cf568f": {
+              "id": "50f6d6b6-c5b2-4d75-9cce-95d734cf568f",
+              "type": "response",
+              "selected": true,
+              "x": 2960,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl834v50f00te356equ4jnrlb",
+                  "type": "default",
+                  "x": 2952,
+                  "y": 336.73,
+                  "name": "cl834v50f00tf356ecb08s7z8",
+                  "parentNode": "50f6d6b6-c5b2-4d75-9cce-95d734cf568f",
+                  "links": [
+                    "799a4ee1-aa62-43a4-ac64-3b1a0fe425ae"
+                  ],
+                  "in": true,
+                  "fieldLabel": "Response"
+                },
+                {
+                  "id": "cl834v50f00tg356evdhn5t89",
+                  "type": "default",
+                  "x": 3105.98,
+                  "y": 336.73,
+                  "name": "cl834v50f00th356esfhyivvk",
+                  "parentNode": "50f6d6b6-c5b2-4d75-9cce-95d734cf568f",
+                  "links": [],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "responseTransform": "{\n  \"message\": $count([upsertTopic.name]) > 0 ? \"Created topics: \" & $join([upsertTopic.name],\",\") : \"No topics to create\"\n}"
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Response"
+            }
+          }
+        }
+      ],
+      "name": "Master Data Flow Configuration Topic Creator",
+      "type": "System",
+      "version": "0.0.2",
+      "walkthrough": {
+        "steps": []
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "header": {
+    "id": "masterDataFlowConfigurationGetUnitsByCode",
+    "name": "Master Data Flow Configuration Get Units By Code",
+    "description": "This saved transform will lookup the units you provide to the request, if they don't exist they will be created. At the end of the process they will be returned back with all new creations as well as the initial units. This saved script should NEVER be edited and will be installed with the Master Data Configuration Flow Package\n\nRequest format\n\n['ea','pc']",
+    "active": true
+  },
+  "version": {
+    "id": "masterDataFlowConfigurationGetUnitsByCodev1-0-0",
+    "description": "This saved transform will lookup the units you provide to the request, if they don't exist they will be created. At the end of the process they will be returned back with all new creations as well as the initial units. This saved script should NEVER be edited and will be installed with the Master Data Configuration Flow Package\n\nRequest format\n\n['ea','pc']",
+    "scriptLanguageId": "JSONata",
+    "transform": "(\n  $unitCodes := $;\n\n  $units := [\n    $query({\n      \"statement\": '\n        query ($code: [String!]!) {\n          data: unit(\n            where: {\n              code: {\n                _in: $code\n              }\n            }\n          ) {\n            edges {\n              node {\n                id\n                code\n              }\n            }\n          }\n        }\n      ',\n      \"variables\": {\n        \"code\": [$unitCodes]\n      }\n    }).data.edges.node\n  ];\n  \n  $filteredUnits := [\n    $filter($unitCodes,function($v){\n      $not($lowercase($v) in [$units.($lowercase(code))])\n    })\n  ];\n   \n  $addOrUpdate := (\n    $count($filteredUnits) = 0 ?\n    (\n      $units\n    )\n    :\n    (\n      $output := $mutate({\n        \"statement\": '\n          mutation ($payload: [UnitCreatePayloadInput!]!) {\n            data: createUnit(payload: $payload) {\n              id\n              code\n            }\n          }\n        ',\n        \"variables\": {\n          \"payload\": [\n            $filteredUnits.{\n              \"create\": {\n                \"code\": $,\n                \"name\": $,\n                \"unitTypeId\": \"Amount\"\n              }\n            }\n          ]\n        }\n      }).data;\n\n      $output;\n    )\n  );\n  \n  $uniqBy([$addOrUpdate,$units],function($v){\n    $v.id\n  })\n)",
+    "inputSchema": {},
+    "outputSchema": {},
+    "number": "1.0.0",
+    "savedTransformId": "masterDataFlowConfigurationGetUnitsByCode"
+  }
+}

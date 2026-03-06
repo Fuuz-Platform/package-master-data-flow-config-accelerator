@@ -1,0 +1,824 @@
+{
+  "header": {
+    "id": "cl7jh4b1500j8015zbf3k6b65",
+    "name": "Master Data Flow Import Log",
+    "description": "This table will allow you to review logs from the Master Data Flow Configurations that are setup.",
+    "active": true,
+    "isWidget": false
+  },
+  "version": {
+    "id": "cl8aid7d3004n011v1boc4cuh",
+    "number": "0.0.8",
+    "description": "- Updated the screen to allow the user to pass Ignore Modified After.",
+    "screenId": "cl7jh4b1500j8015zbf3k6b65",
+    "design": {
+      "components": [
+        {
+          "type": "table",
+          "name": "MasterDataImportLogTable",
+          "props": {
+            "autoSearch": false,
+            "columns": [
+              {
+                "name": "createdAt",
+                "description": "The date and time the record was created.",
+                "label": "Created At",
+                "format": "datetime",
+                "formatString": "L h:mm:ss.SSS A",
+                "dataPath": "createdAt",
+                "linkTarget": {
+                  "__transform": "\"/system/orchestration/dataFlowDeploymentLogs/\" & data.id"
+                },
+                "query": {
+                  "fields": [
+                    "createdAt",
+                    "id"
+                  ]
+                }
+              },
+              {
+                "name": "createdByUserId",
+                "description": "The unique identifier of the User who created this record.",
+                "label": "Created By User Id",
+                "format": "text",
+                "dataPath": "createdByUserId",
+                "query": {
+                  "fields": [
+                    "createdByUserId"
+                  ]
+                }
+              },
+              {
+                "name": "createdByUser",
+                "description": "The User who created this record.",
+                "label": "Created By User",
+                "format": "text",
+                "dataPath": "createdByUser.email",
+                "linkTarget": {
+                  "__transform": "\"/system/accessControl/users/\" & data.createdByUser.id"
+                },
+                "query": {
+                  "fields": [
+                    "createdByUser.id",
+                    "createdByUser.email"
+                  ]
+                }
+              },
+              {
+                "name": "updatedAt",
+                "description": "The date and time the record was last updated.",
+                "label": "Updated At",
+                "format": "datetime",
+                "dataPath": "updatedAt",
+                "query": {
+                  "fields": [
+                    "updatedAt"
+                  ]
+                }
+              },
+              {
+                "name": "updatedByUserId",
+                "description": "The unique identifier of the User who last updated this record.",
+                "label": "Updated By User Id",
+                "format": "text",
+                "dataPath": "updatedByUserId",
+                "query": {
+                  "fields": [
+                    "updatedByUserId"
+                  ]
+                }
+              },
+              {
+                "name": "updatedByUser",
+                "description": "The User who last updated this record.",
+                "label": "Updated By User",
+                "format": "text",
+                "dataPath": "updatedByUser.email",
+                "linkTarget": {
+                  "__transform": "\"/system/accessControl/users/\" & data.updatedByUser.id"
+                },
+                "query": {
+                  "fields": [
+                    "updatedByUser.id",
+                    "updatedByUser.email"
+                  ]
+                }
+              },
+              {
+                "name": "id",
+                "description": "The unique identifier of the Data Flow Deployment.",
+                "label": "Id",
+                "format": "text",
+                "dataPath": "id",
+                "query": {
+                  "fields": [
+                    "id",
+                    "id"
+                  ]
+                },
+                "linkTarget": {
+                  "__transform": "\"/system/orchestration/dataFlowDeploymentLogs/\" & data.id"
+                }
+              },
+              {
+                "name": "dataFlowDeploymentId",
+                "description": "The unique identifier of the data flow deployment this record was logged from.",
+                "label": "Data Flow Deployment Id",
+                "format": "text",
+                "dataPath": "dataFlowDeploymentId",
+                "query": {
+                  "fields": [
+                    "dataFlowDeploymentId"
+                  ]
+                }
+              },
+              {
+                "name": "dataFlowDeployment",
+                "description": "The data flow deployment this record was logged from.",
+                "label": "Data Flow Deployment",
+                "format": "text",
+                "dataPath": "dataFlowDeployment.label",
+                "linkTarget": {
+                  "__transform": "\"/system/orchestration/dataFlowDeployments/\" & data.dataFlowDeployment.id"
+                },
+                "query": {
+                  "fields": [
+                    "dataFlowDeployment.id",
+                    "dataFlowDeployment.label"
+                  ]
+                }
+              },
+              {
+                "name": "dataFlowVersion",
+                "description": "The data flow version this record was logged from.",
+                "label": "Data Flow Version",
+                "format": "text",
+                "dataPath": "dataFlowAndVersion",
+                "linkTarget": {
+                  "__transform": "\"/system/orchestration/dataFlowVersions/\" & data.dataFlowDeployment.dataFlowVersion.id"
+                },
+                "data": {
+                  "__transform": "data.dataFlowDeployment.dataFlowVersion.dataFlow.name & \" - \" & data.dataFlowDeployment.dataFlowVersion.number"
+                },
+                "query": {
+                  "fields": [
+                    "dataFlowDeployment.dataFlowVersion.id",
+                    "dataFlowDeployment.dataFlowVersion.number",
+                    "dataFlowDeployment.dataFlowVersion.dataFlow.name"
+                  ]
+                }
+              },
+              {
+                "name": "dataFlow",
+                "description": "The data flow this record was logged from.",
+                "label": "Data Flow",
+                "format": "text",
+                "dataPath": "dataFlowDeployment.dataFlowVersion.dataFlow.name",
+                "linkTarget": {
+                  "__transform": "\"/system/orchestration/dataFlows/\" & data.dataFlowDeployment.dataFlowVersion.dataFlow.id"
+                },
+                "query": {
+                  "fields": [
+                    "dataFlowDeployment.dataFlowVersion.dataFlow.id",
+                    "dataFlowDeployment.dataFlowVersion.dataFlow.name"
+                  ]
+                }
+              },
+              {
+                "name": "dataFlowDeploymentLogTypeId",
+                "description": "The unique identifier of the type of this log.",
+                "label": "Data Flow Deployment Log Type Id",
+                "format": "text",
+                "dataPath": "dataFlowDeploymentLogTypeId",
+                "query": {
+                  "fields": [
+                    "dataFlowDeploymentLogTypeId"
+                  ]
+                }
+              },
+              {
+                "name": "dataFlowDeploymentLogType",
+                "description": "The type of this log.",
+                "label": "Log Type",
+                "format": "text",
+                "dataPath": "dataFlowDeploymentLogType.id",
+                "query": {
+                  "fields": [
+                    "dataFlowDeploymentLogType.id",
+                    "dataFlowDeploymentLogType.id"
+                  ]
+                }
+              },
+              {
+                "name": "executionMessageId",
+                "description": "The ID of the execution that triggered this log.",
+                "label": "Execution Message Id",
+                "format": "text",
+                "dataPath": "executionMessageId",
+                "query": {
+                  "fields": [
+                    "executionMessageId"
+                  ]
+                }
+              },
+              {
+                "name": "nodeId",
+                "description": "The node that logged this message.",
+                "label": "Node Id",
+                "format": "text",
+                "dataPath": "nodeId",
+                "query": {
+                  "fields": [
+                    "nodeId"
+                  ]
+                }
+              },
+              {
+                "name": "message",
+                "description": "The human-readable message from the log.",
+                "label": "Message",
+                "format": "text",
+                "dataPath": "message",
+                "columnProperties": {
+                  "minWidth": 200,
+                  "maxWidth": 650
+                },
+                "query": {
+                  "fields": [
+                    "message"
+                  ]
+                }
+              },
+              {
+                "name": "metadata",
+                "description": "The JSON containing metadata for this log.",
+                "label": "Metadata",
+                "format": "json",
+                "dataPath": "metadata",
+                "query": {
+                  "fields": [
+                    "metadata"
+                  ]
+                }
+              },
+              {
+                "name": "nodeName",
+                "description": "The name of the node for this log.",
+                "label": "Node Name",
+                "format": "text",
+                "dataPath": "metadata.node.name",
+                "query": {
+                  "fields": [
+                    "metadata"
+                  ]
+                }
+              },
+              {
+                "name": "nodeType",
+                "description": "The type of the node for this log.",
+                "label": "Node Type",
+                "format": "text",
+                "dataPath": "metadata.node.type",
+                "query": {
+                  "fields": [
+                    "metadata"
+                  ]
+                }
+              }
+            ],
+            "filters": [
+              {
+                "name": "createdAt",
+                "description": "The date and time the record was created.",
+                "label": "Created At",
+                "type": "datetimeRange",
+                "dataPath": "filter.createdAt"
+              },
+              {
+                "name": "createdByUserId",
+                "description": "The unique identifier of the User who created this record.",
+                "label": "Created By User Id",
+                "type": "text",
+                "dataPath": "filter.createdByUserId._contains"
+              },
+              {
+                "name": "createdByUser",
+                "description": "The User who created this record.",
+                "label": "Created By User",
+                "labelField": "email",
+                "labelPath": "email",
+                "additionalFields": "email",
+                "type": "combobox",
+                "dataPath": "createdByUser",
+                "target": {
+                  "dataPath": "filter.createdByUserId._in"
+                },
+                "multiselect": true,
+                "api": "Application",
+                "queryType": "User"
+              },
+              {
+                "name": "masterDataFlowConfiguration",
+                "description": "The User who created this record.",
+                "label": "Master Data Configuration",
+                "type": "combobox",
+                "dataPath": "masterDataFlowConfiguration",
+                "multiselect": false,
+                "validation": {
+                  "required": true
+                },
+                "api": "Application",
+                "queryType": "MasterDataFlowConfiguration"
+              },
+              {
+                "name": "updatedAt",
+                "description": "The date and time the record was last updated.",
+                "label": "Updated At",
+                "type": "datetimeRange",
+                "dataPath": "filter.updatedAt"
+              },
+              {
+                "name": "updatedByUserId",
+                "description": "The unique identifier of the User who last updated this record.",
+                "label": "Updated By User Id",
+                "type": "text",
+                "dataPath": "filter.updatedByUserId._contains"
+              },
+              {
+                "name": "updatedByUser",
+                "description": "The User who last updated this record.",
+                "label": "Updated By User",
+                "labelField": "email",
+                "labelPath": "email",
+                "additionalFields": "email",
+                "type": "combobox",
+                "dataPath": "updatedByUser",
+                "target": {
+                  "dataPath": "filter.updatedByUserId._in"
+                },
+                "multiselect": true,
+                "api": "Application",
+                "queryType": "User"
+              },
+              {
+                "name": "id",
+                "description": "The unique identifier of the Data Flow Deployment.",
+                "label": "Id",
+                "type": "text",
+                "dataPath": "filter.id._contains"
+              },
+              {
+                "name": "dataFlow",
+                "description": "The data flow this record was logged from.",
+                "label": "Data Flow",
+                "type": "combobox",
+                "dataPath": "dataFlow",
+                "labelField": "name",
+                "labelPath": "name",
+                "autoFill": true,
+                "target": {
+                  "dataPath": "filter.dataFlowDeployment.dataFlowId._in"
+                },
+                "additionalFilter": {
+                  "__transform": "(\n  $output := $isNilOrEmpty(data.masterDataFlowConfiguration.id) ? undefined : $query({\"statement\":'query getConfig($id:String!){\n    masterDataFlowConfiguration(where: {\n      id: {\n        _eq: $id\n      }\n    }) {\n      edges {\n        node {\n          dataFlowConfiguration\n        }\n      }\n    }\n  }',\"variables\":{\n    \"id\": data.masterDataFlowConfiguration.id\n  }});\n\n  {\n    \"id\": {\n      \"_in\": $count([$output.masterDataFlowConfiguration.edges.node.dataFlowConfiguration.flows.dataFlow.id]) > 0 ? [\n        $output.masterDataFlowConfiguration.edges.node.dataFlowConfiguration.flows.dataFlow.id, \"masterDataConfigurationFlow\"\n      ] : []\n    }\n  }\n)"
+                },
+                "autoClear": true,
+                "multiselect": true,
+                "api": "Application",
+                "queryType": "DataFlow"
+              },
+              {
+                "name": "dataFlowDeploymentId",
+                "description": "The unique identifier of the data flow deployment this record was logged from.",
+                "label": "Data Flow Deployment Id",
+                "type": "text",
+                "dataPath": "filter.dataFlowDeploymentId._contains"
+              },
+              {
+                "name": "dataFlowDeploymentLogTypeId",
+                "description": "The unique identifier of the type of this log.",
+                "label": "Data Flow Deployment Log Type Id",
+                "type": "text",
+                "dataPath": "filter.dataFlowDeploymentLogTypeId._contains"
+              },
+              {
+                "name": "dataFlowDeploymentLogType",
+                "description": "The type of this log.",
+                "label": "Log Type",
+                "labelField": "id",
+                "labelPath": "id",
+                "type": "combobox",
+                "dataPath": "dataFlowDeploymentLogType",
+                "defaultValue": [
+                  "Info",
+                  "Warn",
+                  "Error",
+                  "Fatal"
+                ],
+                "target": {
+                  "dataPath": "filter.dataFlowDeploymentLogTypeId._in"
+                },
+                "multiselect": true,
+                "api": "Application",
+                "queryType": "DataFlowDeploymentLogType"
+              },
+              {
+                "name": "executionMessageId",
+                "description": "The ID of the execution that triggered this log.",
+                "label": "Execution Message Id",
+                "type": "text",
+                "dataPath": "filter.executionMessageId._contains"
+              },
+              {
+                "name": "nodeId",
+                "description": "The node that logged this message.",
+                "label": "Node Id",
+                "type": "text",
+                "dataPath": "filter.nodeId._contains"
+              },
+              {
+                "name": "message",
+                "description": "The human-readable message from the log.",
+                "label": "Message",
+                "type": "text",
+                "dataPath": "filter.message._contains"
+              },
+              {
+                "name": "metadata",
+                "description": "The JSON containing metadata for this log.",
+                "label": "Metadata",
+                "type": "text",
+                "dataPath": "filter.metadata._eq"
+              },
+              {
+                "name": "filter.nodeName",
+                "description": "The name of the node for this log.",
+                "label": "Node Name",
+                "target": {
+                  "dataPath": "filter.metadata._containsObject.value.node.name"
+                },
+                "dataPath": "filter.nodeName",
+                "type": "text"
+              },
+              {
+                "name": "filter.nodeType",
+                "description": "The type of the node for this log.",
+                "label": "Node Type",
+                "target": {
+                  "dataPath": "filter.metadata._containsObject.value.node.type"
+                },
+                "dataPath": "filter.nodeType",
+                "type": "text"
+              },
+              {
+                "name": "startDate",
+                "description": "The start date to compare with createdAt.",
+                "label": "Start Date",
+                "type": "date",
+                "onChange": "{\n  \"startDate\": $isNilOrEmpty(newValue) ? undefined : $moment(newValue).startOf('day')\n}",
+                "target": {
+                  "dataPath": "filter.createdAt._gte"
+                },
+                "defaultValue": {
+                  "__transform": "$moment().startOf('day')"
+                },
+                "dataPath": "startDate"
+              },
+              {
+                "name": "endDate",
+                "description": "The end date to compare with createdAt.",
+                "label": "End Date",
+                "type": "date",
+                "onChange": "{\n  \"endDate\": $isNilOrEmpty(newValue) ? undefined : $moment(newValue).endOf('day')\n}",
+                "target": {
+                  "dataPath": "filter.createdAt._lte"
+                },
+                "defaultValue": {
+                  "__transform": "$moment().endOf('day')"
+                },
+                "dataPath": "endDate"
+              },
+              {
+                "name": "orderBy",
+                "type": "parameter",
+                "data": {
+                  "field": "createdAt",
+                  "direction": "desc"
+                },
+                "dataPath": "orderBy"
+              }
+            ],
+            "actions": [
+              {
+                "title": "Search",
+                "icon": {
+                  "icon": "search",
+                  "variant": "regular"
+                },
+                "buttonColor": "primary",
+                "color": "primary",
+                "action": {
+                  "navigation": {
+                    "submit": true
+                  }
+                }
+              },
+              {
+                "title": "Create",
+                "disabled": true,
+                "icon": {
+                  "icon": "plus",
+                  "variant": "regular"
+                }
+              },
+              {
+                "title": "Update",
+                "disabled": true,
+                "icon": "pencil"
+              },
+              {
+                "title": "Delete",
+                "disabled": true,
+                "icon": {
+                  "icon": "trash",
+                  "variant": "solid"
+                }
+              },
+              {
+                "title": "Process Master Data",
+                "icon": {
+                  "icon": "sync",
+                  "variant": "duotone"
+                },
+                "action": [
+                  {
+                    "type": "form",
+                    "submitIcon": {
+                      "icon": "check",
+                      "variant": "regular"
+                    },
+                    "title": "Configure Master Data Upload",
+                    "fields": [
+                      {
+                        "name": "dataFlow",
+                        "description": "The data flow this record was logged from.",
+                        "label": "Data Flow",
+                        "type": "combobox",
+                        "dataPath": "dataFlowToRun",
+                        "labelField": "name",
+                        "labelPath": "name",
+                        "additionalFilter": {
+                          "__transform": "(\n  $output := $isNilOrEmpty($components.MasterDataImportLogTable.filterValues.masterDataFlowConfiguration.id) ? undefined : $query({\"statement\":'query getConfig($id:String!){\n    masterDataFlowConfiguration(where: {\n      id: {\n        _eq: $id\n      }\n    }) {\n      edges {\n        node {\n          dataFlowConfiguration\n        }\n      }\n    }\n  }',\"variables\":{\n    \"id\": $components.MasterDataImportLogTable.filterValues.masterDataFlowConfiguration.id\n  }});\n\n  {\n    \"id\": {\n      \"_in\": $count([$output.masterDataFlowConfiguration.edges.node.dataFlowConfiguration.flows.dataFlow.id]) > 0 ? [\n        $output.masterDataFlowConfiguration.edges.node.dataFlowConfiguration.flows.dataFlow.id, \"masterDataConfigurationFlow\"\n      ] : []\n    }\n  }\n)"
+                        },
+                        "multiselect": false,
+                        "api": "Application",
+                        "queryType": "DataFlow"
+                      },
+                      {
+                        "name": "stopAfterImport",
+                        "description": "",
+                        "label": "Stop After First Import?",
+                        "type": "checkbox",
+                        "dataPath": "stopAfterImport",
+                        "validation": {
+                          "required": true
+                        },
+                        "query": {},
+                        "defaultValue": false
+                      },
+                      {
+                        "name": "ignoreModifiedAfter",
+                        "description": "",
+                        "label": "Ignore Modified After Filter?",
+                        "type": "checkbox",
+                        "dataPath": "ignoreModifiedAfter",
+                        "validation": {
+                          "required": true
+                        },
+                        "query": {},
+                        "defaultValue": false
+                      }
+                    ]
+                  },
+                  {
+                    "type": "confirmation",
+                    "message": "Initiate Master Data refresh?",
+                    "submitIcon": {
+                      "icon": "check",
+                      "variant": "duotone"
+                    }
+                  },
+                  {
+                    "type": "flow",
+                    "transforms": {
+                      "pre": "(\n  {\n    \"masterDataFlowConfigId\": $components.MasterDataImportLogTable.filterValues.masterDataFlowConfiguration.id,\n    \"dataFlowToRun\": data.dataFlowToRun,\n    \"stopAfterImport\": data.stopAfterImport,\n    \"ignoreModifiedAfter\": data.ignoreModifiedAfter\n  }\n)\n"
+                    },
+                    "flowId": "masterDataConfigurationFlow",
+                    "message": {
+                      "__transform": "data.message"
+                    }
+                  }
+                ]
+              }
+            ],
+            "views": [
+              {
+                "name": "Default",
+                "isDefault": true,
+                "rowLimit": 500,
+                "columns": [
+                  {
+                    "name": "id",
+                    "visible": false
+                  },
+                  {
+                    "name": "createdAt",
+                    "visible": true
+                  },
+                  {
+                    "name": "dataFlowDeploymentLogType",
+                    "visible": true
+                  },
+                  {
+                    "name": "nodeType",
+                    "visible": true
+                  },
+                  {
+                    "name": "nodeName",
+                    "visible": true
+                  },
+                  {
+                    "name": "message",
+                    "visible": true
+                  },
+                  {
+                    "name": "dataFlow",
+                    "visible": true
+                  },
+                  {
+                    "name": "dataFlowVersion",
+                    "visible": true
+                  },
+                  {
+                    "name": "dataFlowDeployment",
+                    "visible": false
+                  },
+                  {
+                    "name": "executionMessageId",
+                    "visible": false
+                  },
+                  {
+                    "name": "createdByUserId",
+                    "visible": false
+                  },
+                  {
+                    "name": "createdByUser",
+                    "visible": false
+                  },
+                  {
+                    "name": "updatedAt",
+                    "visible": false
+                  },
+                  {
+                    "name": "updatedByUserId",
+                    "visible": false
+                  },
+                  {
+                    "name": "updatedByUser",
+                    "visible": false
+                  },
+                  {
+                    "name": "dataFlowDeploymentId",
+                    "visible": false
+                  },
+                  {
+                    "name": "dataFlowDeploymentLogTypeId",
+                    "visible": false
+                  },
+                  {
+                    "name": "nodeId",
+                    "visible": false
+                  },
+                  {
+                    "name": "metadata",
+                    "visible": false
+                  }
+                ],
+                "filters": [
+                  {
+                    "name": "masterDataFlowConfiguration",
+                    "visible": true
+                  },
+                  {
+                    "name": "startDate",
+                    "visible": true
+                  },
+                  {
+                    "name": "endDate",
+                    "visible": true
+                  },
+                  {
+                    "name": "message",
+                    "visible": false
+                  },
+                  {
+                    "name": "dataFlowDeploymentLogType",
+                    "visible": true
+                  },
+                  {
+                    "name": "dataFlow",
+                    "visible": true
+                  },
+                  {
+                    "name": "dataFlowDeployment",
+                    "visible": true
+                  },
+                  {
+                    "name": "executionMessageId",
+                    "visible": false
+                  },
+                  {
+                    "name": "nodeName",
+                    "visible": true
+                  },
+                  {
+                    "name": "nodeType",
+                    "visible": true
+                  },
+                  {
+                    "name": "createdAt",
+                    "visible": false
+                  },
+                  {
+                    "name": "createdByUserId",
+                    "visible": false
+                  },
+                  {
+                    "name": "createdByUser",
+                    "visible": false
+                  },
+                  {
+                    "name": "updatedAt",
+                    "visible": false
+                  },
+                  {
+                    "name": "updatedByUserId",
+                    "visible": false
+                  },
+                  {
+                    "name": "updatedByUser",
+                    "visible": false
+                  },
+                  {
+                    "name": "id",
+                    "visible": false
+                  },
+                  {
+                    "name": "dataFlowDeploymentId",
+                    "visible": false
+                  },
+                  {
+                    "name": "dataFlowDeploymentLogTypeId",
+                    "visible": false
+                  },
+                  {
+                    "name": "nodeId",
+                    "visible": false
+                  },
+                  {
+                    "name": "metadata",
+                    "visible": false
+                  }
+                ],
+                "sort": [
+                  {
+                    "colId": "createdAt",
+                    "sort": "desc"
+                  }
+                ]
+              }
+            ],
+            "query": {
+              "api": "Application",
+              "model": "DataFlowDeploymentLog",
+              "fields": [
+                "id"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "routes": [
+    {
+      "id": "cl7jh552c00ja015z1w1p22ja",
+      "title": "Master Data Flow Import Log",
+      "path": "/masterDataFlow/importLog",
+      "moduleId": "orchestration",
+      "screenId": "cl7jh4b1500j8015zbf3k6b65",
+      "isMenuAccessible": true,
+      "submenu": ""
+    }
+  ]
+}

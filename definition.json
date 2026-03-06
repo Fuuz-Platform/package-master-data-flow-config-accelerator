@@ -1,0 +1,217 @@
+{
+  "packageDefinition": {
+    "name": "Master Data Flow Configuration Schema Screens and Flows"
+  },
+  "packageDefinitionVersion": {
+    "id": "clpk02kjy005a356glyod9yos",
+    "version": "1.0.1"
+  },
+  "packageDefinitionSelections": [
+    {
+      "id": "clpk02kol005b356g65y452dy",
+      "api": "application",
+      "modelName": "DataFlow",
+      "selected": [
+        {
+          "id": "masterDataConfigurationFlow",
+          "label": "Master Data Configuration Flow"
+        },
+        {
+          "id": "masterDataFlowConfigurationTopicCreator",
+          "label": "Master Data Flow Configuration Topic Creator"
+        }
+      ],
+      "fields": [
+        {
+          "name": "id"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "active"
+        },
+        {
+          "name": "dataFlowTypeId"
+        },
+        {
+          "name": "moduleId"
+        }
+      ],
+      "metadata": {
+        "dataTransform": "$",
+        "labelField": [
+          {
+            "name": "name"
+          }
+        ]
+      },
+      "packageDefinitionVersionId": "clpk02kjy005a356glyod9yos"
+    },
+    {
+      "id": "clpk02kol005c356gncaz25pa",
+      "api": "application",
+      "modelName": "DataModel",
+      "selected": [
+        {
+          "id": "masterDataFlowConfiguration",
+          "label": "MasterDataFlowConfiguration"
+        }
+      ],
+      "fields": [
+        {
+          "name": "id"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "dataModelKindId"
+        }
+      ],
+      "metadata": {
+        "dataTransform": "$",
+        "labelField": [
+          {
+            "name": "name"
+          }
+        ]
+      },
+      "packageDefinitionVersionId": "clpk02kjy005a356glyod9yos"
+    },
+    {
+      "id": "clpk02kol005d356ghw9ufcc3",
+      "api": "application",
+      "modelName": "Screen",
+      "selected": [
+        {
+          "id": "cl7jh4b1500j8015zbf3k6b65",
+          "label": "Master Data Flow Import Log"
+        },
+        {
+          "id": "cl7jg5w8r00jf015meey732zm",
+          "label": "MasterDataFlowConfiguration Form"
+        },
+        {
+          "id": "cl7jg5q6b00jb015m1zot5eki",
+          "label": "MasterDataFlowConfiguration Table"
+        }
+      ],
+      "fields": [
+        {
+          "name": "id"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "active"
+        },
+        {
+          "name": "isWidget"
+        }
+      ],
+      "metadata": {
+        "dataTransform": "$",
+        "labelField": [
+          {
+            "name": "name"
+          }
+        ]
+      },
+      "packageDefinitionVersionId": "clpk02kjy005a356glyod9yos"
+    },
+    {
+      "id": "clpk02kol005e356gny4t6y21",
+      "api": "application",
+      "modelName": "SavedTransform",
+      "selected": [
+        {
+          "id": "masterDataFlowConfigurationGetUnitsByCode",
+          "label": "Master Data Flow Configuration Get Units By Code"
+        }
+      ],
+      "fields": [
+        {
+          "name": "id"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "transform"
+        },
+        {
+          "name": "inputSchema"
+        },
+        {
+          "name": "outputSchema"
+        },
+        {
+          "name": "deprecated"
+        },
+        {
+          "name": "scriptLanguageId"
+        }
+      ],
+      "metadata": {
+        "dataTransform": "$",
+        "labelField": [
+          {
+            "name": "name"
+          }
+        ]
+      },
+      "packageDefinitionVersionId": "clpk02kjy005a356glyod9yos"
+    },
+    {
+      "id": "clpk02kol005f356gcbz24211",
+      "api": "application",
+      "modelName": "Topic",
+      "selected": [
+        {
+          "id": "cl6l8x07103uj013u0svt64j5",
+          "label": "PublishToMasterDataImport"
+        }
+      ],
+      "fields": [
+        {
+          "name": "id"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "valueSchema"
+        },
+        {
+          "name": "webhookAccessible"
+        }
+      ],
+      "metadata": {
+        "dataTransform": "$",
+        "labelField": [
+          {
+            "name": "name"
+          }
+        ]
+      },
+      "packageDefinitionVersionId": "clpk02kjy005a356glyod9yos"
+    }
+  ]
+}

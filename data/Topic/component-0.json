@@ -1,0 +1,14 @@
+{
+  "api": "application",
+  "modelName": "Topic",
+  "payload": [
+    {
+      "id": "cl6l8x07103uj013u0svt64j5",
+      "name": "PublishToMasterDataImport",
+      "description": "",
+      "valueSchema": {},
+      "webhookAccessible": false
+    }
+  ],
+  "metadata": {}
+}

@@ -1,0 +1,3814 @@
+{
+  "header": {
+    "id": "masterDataConfigurationFlow",
+    "name": "Master Data Configuration Flow",
+    "description": "This flow will run the requested Master Data Configuration specified by the Schedule.",
+    "active": true,
+    "dataFlowTypeId": "System",
+    "moduleId": null
+  },
+  "version": {
+    "id": "cl8bunp49000101857hwxfbys",
+    "number": "0.0.13",
+    "description": "- Fixed the log for the time it takes to execute a process.",
+    "dataFlowId": "masterDataConfigurationFlow",
+    "flow": {
+      "id": "cl8bunp49000101857hwxfbys",
+      "name": "Master Data Configuration Flow",
+      "type": "System",
+      "nodes": [
+        {
+          "id": "0530e82e-47a4-4449-a1a1-f827122d3f30",
+          "name": "Query Master Data Flow Configuration",
+          "type": "query",
+          "data": {
+            "api": "application",
+            "variablesTransform": "{\n  \"where\": {\n    \"id\": {\n      \"_eq\": $state.context.CONSTANTS.PARAMETERS.MASTER_DATA_FLOW_CONFIG_ID\n    },\n    \"active\": {\n      \"_eq\": true\n    }\n  }\n}",
+            "query": "query Query($where: MasterDataFlowConfigurationWhereInput, $orderBy: [MasterDataFlowConfigurationOrderByInput!], $first: Int, $after: String) {\n  masterDataFlowConfiguration(where: $where, orderBy: $orderBy, first: $first, after: $after) {\n    edges {\n      node {\n        id\n        dataFlowConfiguration\n        connectionConfiguration\n        topicPrefix\n        active\n        connection {\n          name\n        }\n      }\n    }\n  }\n}\n",
+            "nextNodes": [
+              "f2687c70-42c1-4c95-8056-efb7cf1f5e14"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa",
+          "name": "Determine Next Flow Call",
+          "type": "transform",
+          "data": {
+            "nextNodes": [
+              "0448aa9b-0d2e-4368-9aa7-65cc9a33e1ef"
+            ],
+            "transform": "(\n  /* $state := { \"context\": $$.state.context }; */\n  $CONSTANTS := $state.context.CONSTANTS;\n  $PARAMETERS := $CONSTANTS.PARAMETERS;\n  $STOP_AFTER_IMPORT := $PARAMETERS.STOP_AFTER_IMPORT;\n  $DATA_FLOW_OVERRIDE := $PARAMETERS.DATA_FLOW_OVERRIDE;\n  $IGNORE_MODIFIED_AFTER := $PARAMETERS.IGNORE_MODIFIED_AFTER;\n  \n  $plexOdbcConfig := $CONSTANTS.masterDataFlowConfiguration;\n  $requestedFlow := $plexOdbcConfig.requestedFlow;\n  $dataFlowConfig := $plexOdbcConfig.dataFlowConfiguration;\n  \n  $DATE_DEFAULTS := {\n    \"modifiedAfter\": $moment(\"01-01-1970\"),\n    \"modifiedBefore\": $moment().add(1,'days').endOf('day')\n  };\n  \n  $DATE_RANGE_DEFAULTS := {\n    \"modifiedAfter\": {\n      \"data\": {\n        \"unit\": \"week\",\n        \"offset\": -1,\n        \"range\": 1,\n        \"base\": \"startOf\"\n      },\n      \"label\": \"DEFAULTED\"\n    },\n    \"modifiedBefore\": {\n      \"data\": {},\n      \"label\": \"DEFAULTED\"\n    }\n  };\n  \n  $getNextFlow := function($requestedFlow) {\n    $isNilOrEmpty($DATA_FLOW_OVERRIDE) ? (\n      $isNilOrEmpty($requestedFlow.id) ? \n        $dataFlowConfig.flows[0] \n      :\n      $findFirstIndex($dataFlowConfig.flows, function($v) {\n        $v.id = $requestedFlow.id\n      })~>function($index) {\n        $dataFlowConfig.flows[$index + 1]\n      }\n    )\n    :\n    $dataFlowConfig.flows[id = $DATA_FLOW_OVERRIDE]\n  };\n  \n  $dateRangeObjectToDate := function($range,$dateType) {\n    (\n      $IGNORE_MODIFIED_AFTER = true or $isNilOrEmpty($range) ? \n        $lookup($DATE_DEFAULTS,$dateType)\n      :\n      $range.base = \"startOf\" ?\n        $moment().startOf($range.unit).add($range.offset,$range.unit)\n      :\n      $range.base = \"endOf\" ?\n        $moment().endOf($range.unit).add($range.offset,$range.unit)\n    )\n  };\n  \n  $applyFilterDefaults := function($filters) {\n    (\n      $filters := $coalesce([$filters[0], {}]);\n      $defaults := [$keys($DATE_RANGE_DEFAULTS)];\n      \n      $mergeDeep([\n        $filters,\n        $defaults.(\n          $default := $;\n          $curFilterValue := $lookup($filters,$default);\n          $isNilOrEmpty($curFilterValue) ? \n            {\n              $default: $lookup($DATE_RANGE_DEFAULTS,$default) \n            }\n          :\n            {\n              $default: $curFilterValue\n            }\n        )\n      ])\n    )\n  };\n  \n  $applyModifiedFilter := function($flow) {\n    $flow~>| $ | (\n      $filters := $applyFilterDefaults(filters);\n      {\n        \"filters\": $filters\n        ~>| modifiedAfter | {\n          \"formattedDate\": $dateRangeObjectToDate(data,\"modifiedAfter\")\n        }|\n        ~>| modifiedBefore | {\n          \"formattedDate\": $dateRangeObjectToDate(data,\"modifiedBefore\")\n        }|\n      }\n    )|\n  };\n  \n  $CONSTANTS~>| $.masterDataFlowConfiguration | {},[\"requestedFlow\"] |\n  ~>| $.masterDataFlowConfiguration | (\n    $nextFlow := $getNextFlow($requestedFlow);\n    $nextFlow := $applyModifiedFilter($nextFlow);\n    { \n      \"requestedFlow\": $nextFlow\n    }\n  ),[] |\n)"
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "7f199415-5475-407a-a31c-f03ae3b2f1e7",
+          "name": "Subscribe on Publish To Master Data Import",
+          "type": "topic",
+          "data": {
+            "topicName": "PublishToMasterDataImport",
+            "nextNodes": [
+              "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+          "name": "Set Context",
+          "type": "setContext",
+          "data": {
+            "nextNodes": [
+              "d933d5ec-570e-462d-9db6-233897dc40d9"
+            ],
+            "transform": "{\n  \"CONSTANTS\": value.CONSTANTS~>| $ | {},[\"METRICS\"]|~>| $.PARAMETERS | {},[\"DATA_FLOW_OVERRIDE\"] |,\n  \"PRIOR_FLOW_METRICS\": value.CONSTANTS.METRICS\n}"
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "1e956543-1fd3-4c11-b632-3754b4dd6946",
+          "name": "Are there more flows to run?",
+          "type": "ifElse",
+          "data": {
+            "onTrueNextNodes": [
+              "98d1e788-c44c-44f0-8c1e-005c526fcf5a"
+            ],
+            "onFalseNextNodes": [
+              "fe00f615-fb9c-48b6-9b8e-9f10be87d0d8"
+            ],
+            "transform": "$isNilOrEmpty($state.context.CONSTANTS.masterDataFlowConfiguration.requestedFlow.id)~>$not"
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "98d1e788-c44c-44f0-8c1e-005c526fcf5a",
+          "name": "Format Publish",
+          "type": "transform",
+          "data": {
+            "nextNodes": [
+              "8a1da520-3fa7-45bf-b25e-68c82d997377",
+              "101d2d12-3fc2-4f8b-8dd7-217a20c4de1c"
+            ],
+            "transform": "{\n  \"CONSTANTS\": $state.context.CONSTANTS\n    ~>| $ | {\n      \"METRICS\": {\n        \"STARTED_AT\": $now()\n      }\n    }\n  |\n}"
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "fe00f615-fb9c-48b6-9b8e-9f10be87d0d8",
+          "name": "Master Data Flow Import Complete",
+          "type": "log",
+          "data": {
+            "messageTransform": "\"Master Data Flow is complete for Master Data Flow Configuration: \" & $state.context.CONSTANTS.PARAMETERS.MASTER_DATA_FLOW_CONFIG_ID",
+            "level": "Info",
+            "includeContext": false,
+            "includePayload": false
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "0448aa9b-0d2e-4368-9aa7-65cc9a33e1ef",
+          "name": "Reset Context",
+          "type": "setContext",
+          "data": {
+            "nextNodes": [
+              "1e956543-1fd3-4c11-b632-3754b4dd6946"
+            ],
+            "transform": "$state.context~>| $.CONSTANTS | {},[\"masterDataFlowConfiguration\"] |\n              ~>| $.CONSTANTS | { \"masterDataFlowConfiguration\": $$.masterDataFlowConfiguration }|"
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "2fddabf6-c831-4a1e-a9dc-27599b0b7bb7",
+          "name": "Set Initial Context",
+          "type": "setContext",
+          "data": {
+            "transform": "{\n  \"CONSTANTS\": {\n    \"PARAMETERS\": {\n      \"STOP_AFTER_IMPORT\": $coalesce([stopAfterImport,false]),\n      \"DATA_FLOW_OVERRIDE\": dataFlowToRun,\n      \"MASTER_DATA_FLOW_CONFIG_ID\": masterDataFlowConfigId,\n      \"IGNORE_MODIFIED_AFTER\": $coalesce([ignoreModifiedAfter,false])\n    }\n  }\n}",
+            "nextNodes": [
+              "0530e82e-47a4-4449-a1a1-f827122d3f30"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "ad3d66a2-e44d-4e18-930b-23d3f1fad7b2",
+          "name": "Merge Master Configuration To Context",
+          "type": "mergeContext",
+          "data": {
+            "transform": "{\n  \"CONSTANTS\": {\n    \"masterDataFlowConfiguration\": masterDataFlowConfiguration.edges.node~>| $ | \n      {\n        \"connectionName\": connection.name,\n        \"dataFlowConfiguration\": dataFlowConfiguration~>| $ | { \n          \"flows\": [\n            (\n              $activeFlows := [flows[active = true]];\n              $activeFlows~>| $ | {\n                \"id\": dataFlow.id\n              }|\n            )\n          ]\n        } |\n      },\n      [\"connection\"]\n    |\n  }\n}",
+            "nextNodes": [
+              "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "599f05c8-6a7d-4e8c-aeff-10b2d8e5dd7c",
+          "name": "Request",
+          "type": "request",
+          "data": {
+            "nextNodes": [
+              "a9c2b976-478d-483e-afe1-c61b33297a61"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "c1b9e7ac-f1bb-4e34-9727-505500f06c8b",
+          "name": "Response",
+          "type": "response",
+          "data": {
+            "responseTransform": "{\n  \"message\": \"Starting Flow with ID: \" & $state.context.CONSTANTS.masterDataFlowConfiguration.requestedFlow.id\n}"
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "a9c2b976-478d-483e-afe1-c61b33297a61",
+          "name": "Master Data Request",
+          "type": "log",
+          "data": {
+            "messageTransform": "\"Master Data Request Log\"",
+            "level": "Debug",
+            "includeContext": false,
+            "includePayload": true,
+            "nextNodes": [
+              "7ba37af3-d722-4931-8168-2a6c5b0344bd"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "4cbe2721-721c-4e38-bda2-5fdabe8e6f29",
+          "name": "Do we continue?",
+          "type": "ifElse",
+          "data": {
+            "onTrueNextNodes": [
+              "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa"
+            ],
+            "transform": "$state.context.CONSTANTS.PARAMETERS.STOP_AFTER_IMPORT = false",
+            "onFalseNextNodes": [
+              "fe00f615-fb9c-48b6-9b8e-9f10be87d0d8"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "d933d5ec-570e-462d-9db6-233897dc40d9",
+          "name": "Flow Completed",
+          "type": "log",
+          "data": {
+            "messageTransform": "(\n  /* $PRIOR_FLOW_METRICS := {\n    \"STARTED_AT\": $moment().subtract(5,'minutes').format()\n  }; */\n  \n  $PRIOR_FLOW_METRICS := $state.context.PRIOR_FLOW_METRICS;\n    /* FUNCTIONS */\n  $getFlowRunTime := function($startTime, $endTime) {\n    (\n      $isNilOrEmpty($startTime)~>$not and $not($lowercase($moment($startTime).format()) = \"invalid date\") ?\n      (\n        $_start := $coalesce([$parseNumber($moment($startTime).format('x')),0]);\n        $_end := $coalesce([$parseNumber($moment($endTime).format('x')),0]);\n\n        ($_end - $_start) * 0.001;\n        /* \n        {\n          \"start\": $_start,\n          \"end\": $_end,\n          \"total\": ($_end - $_start) * 0.001\n        } \n        */\n      )\n      :\n      0\n    )\n  };\n  \n  $FLOW_STARTED_AT := $moment($PRIOR_FLOW_METRICS.STARTED_AT).format();\n  $ENDED_AT := $now();\n  $FLOW_RUN_TIME := $getFlowRunTime($FLOW_STARTED_AT,$ENDED_AT);\n  \n  $join(\n    [\n      \"Flow ID:\",\n      $state.context.CONSTANTS.masterDataFlowConfiguration.requestedFlow.dataFlow.name,\n      \"completed in\",\n      $string(\n        $FLOW_RUN_TIME = \"0\" ? \"unknown\" : $FLOW_RUN_TIME\n      ),\n      \"seconds\"\n    ],\n    \" \"\n  );\n)",
+            "level": "Info",
+            "includeContext": false,
+            "includePayload": false,
+            "nextNodes": [
+              "4cbe2721-721c-4e38-bda2-5fdabe8e6f29"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "8a1da520-3fa7-45bf-b25e-68c82d997377",
+          "name": "Publish Message to Start Flow",
+          "type": "mutate",
+          "data": {
+            "api": "Application",
+            "variablesTransform": "(\n  $toTopicString := function($topicString,$flowId) {\n    (\n      $splitPrefixString := $split($topicString,\".\")~>function($Segments) {\n        $filter([$Segments],function($Segment){\n          $isNilOrEmpty($Segment)~>$not\n        })\n      };\n      \n      $join(\n        [$splitPrefixString,$flowId],\n        \".\"\n      )\n    )\n  };\n\n  {\n    \"payload\": [\n      {\n        \"topic\": {\n          \"name\": $toTopicString(\n            $state.context.CONSTANTS.masterDataFlowConfiguration.topicPrefix,\n            $.CONSTANTS.masterDataFlowConfiguration.requestedFlow.id\n          )\n        },\n        \"messages\": [\n          {\n            \"value\": $\n          }\n        ]\n      }\n    ]\n  };\n)",
+            "mutation": "mutation publishMessage(\n  $payload:[PublishMessagePayloadInput!]!\n){\n  publishMessages(payload:$payload) {\n    topic {\n      name\n    }\n  }\n}",
+            "nextNodes": [
+              "d6f30ec2-9ca2-4437-9854-ee468460739d",
+              "c1b9e7ac-f1bb-4e34-9727-505500f06c8b"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": true,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "d6f30ec2-9ca2-4437-9854-ee468460739d",
+          "name": "Log Flow Start",
+          "type": "log",
+          "data": {
+            "messageTransform": "$join(\n  [\n    \"Flow ID:\",\n    $state.context.CONSTANTS.masterDataFlowConfiguration.requestedFlow.dataFlow.name,\n    \"has been started\"\n  ],\n  \" \"\n)",
+            "level": "Info",
+            "includeContext": false,
+            "includePayload": false
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "dbc2db13-d079-47c7-8433-c1a00517ac09",
+          "name": "Execute Flow (DO NOT ADD SCHEDULES HERE. THIS IS AN EXAMPLE)",
+          "type": "executeFlow",
+          "data": {
+            "flowId": "masterDataConfigurationFlow",
+            "payloadTransform": "{\n  \"masterDataFlowConfigId\": masterDataFlowConfigId,\n  \"stopAfterImport\": stopAfterImport,\n  \"dataFlowToRun\": dataFlowToRun\n}"
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "7ba37af3-d722-4931-8168-2a6c5b0344bd",
+          "name": "Validate Request",
+          "type": "validate",
+          "data": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "masterDataFlowConfigId": {
+                  "type": "string"
+                },
+                "stopAfterImport": {
+                  "type": "boolean"
+                },
+                "dataFlowToRun": {
+                  "type": "string"
+                },
+                "ignoreModifiedAfter": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "masterDataFlowConfigId"
+              ],
+              "additionalProperties": false
+            },
+            "nextNodes": [
+              "2fddabf6-c831-4a1e-a9dc-27599b0b7bb7"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "f2687c70-42c1-4c95-8056-efb7cf1f5e14",
+          "name": "Was the requested master data flow config found?",
+          "type": "ifElse",
+          "data": {
+            "onFalseNextNodes": [
+              "f9cfbf51-49b3-495e-af76-2c664eeffd5d"
+            ],
+            "transform": "$count(masterDataFlowConfiguration.edges[0].node) = 1",
+            "onTrueNextNodes": [
+              "ad3d66a2-e44d-4e18-930b-23d3f1fad7b2"
+            ]
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "f9cfbf51-49b3-495e-af76-2c664eeffd5d",
+          "name": "Throw Error for Inactive Master Data Flow Configuration",
+          "type": "transform",
+          "data": {
+            "transform": "$throw(\n  \"The requested Master Data Flow Configuration: \" & $state.context.CONSTANTS.PARAMETERS.MASTER_DATA_FLOW_CONFIG_ID & \" is either not active or not setup.\",\n  {\n    \"info\": $state.context\n  }\n)"
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        },
+        {
+          "id": "101d2d12-3fc2-4f8b-8dd7-217a20c4de1c",
+          "name": "Wrap in Value",
+          "type": "transform",
+          "data": {
+            "transform": "{\n  \"value\": $\n}"
+          },
+          "debug": {
+            "breakpointEnabled": false,
+            "publishSubscribeClient": false,
+            "publishToMFGx": false
+          },
+          "logging": {
+            "executionMetrics": false,
+            "executionStarted": false,
+            "executionSucceeded": false,
+            "executionFailed": true
+          }
+        }
+      ],
+      "version": "0.0.12-0"
+    },
+    "diagram": {
+      "id": "cl8bunp49000101857hwxfbys",
+      "offsetX": -206.9,
+      "offsetY": 163.97,
+      "zoom": 96.68,
+      "gridSize": 5,
+      "layers": [
+        {
+          "id": "0e984e98-592d-43dc-8c60-9198195d8b55",
+          "type": "diagram-links",
+          "isSvg": true,
+          "transformed": true,
+          "models": {
+            "0b999114-f75c-413b-8580-1407c7dfc48d": {
+              "points": [
+                {
+                  "id": "84c84deb-e26f-4ae5-915e-ecd3f6b8f9e4",
+                  "type": "point",
+                  "selected": true,
+                  "x": 359.42,
+                  "y": 319.73
+                },
+                {
+                  "id": "2bcfee93-93ed-44f4-8e0a-576bafea3a94",
+                  "type": "point",
+                  "selected": true,
+                  "x": 395,
+                  "y": 319.73
+                }
+              ],
+              "id": "0b999114-f75c-413b-8580-1407c7dfc48d",
+              "type": "default",
+              "selected": false,
+              "source": "7f199415-5475-407a-a31c-f03ae3b2f1e7",
+              "sourcePort": "cl6pd2yvh00br356dsg9q4jxn",
+              "target": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+              "targetPort": "cl6pd429i00cj356dht36qsl8",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "fc770ac1-1e9b-4d96-b480-b3cc4a75bfb5": {
+              "points": [
+                {
+                  "id": "0f52d568-8df4-4470-aab5-71f65f184c55",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1553.17,
+                  "y": 269.89
+                },
+                {
+                  "id": "33515de1-cb74-4448-b7d2-28e189afff67",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1605,
+                  "y": 344.73
+                }
+              ],
+              "id": "fc770ac1-1e9b-4d96-b480-b3cc4a75bfb5",
+              "type": "default",
+              "selected": false,
+              "source": "1e956543-1fd3-4c11-b632-3754b4dd6946",
+              "sourcePort": "cl6pd9dbu00kc356d7kj31vrq",
+              "target": "fe00f615-fb9c-48b6-9b8e-9f10be87d0d8",
+              "targetPort": "cl6pdad2s00nh356d2cw9djz2",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "ff8ddd31-b0e8-44cd-b71e-a6d734fe2235": {
+              "points": [
+                {
+                  "id": "5271b5ed-27eb-44a4-9716-091704342f1e",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1319,
+                  "y": 244.73
+                },
+                {
+                  "id": "e5bf56e9-7517-4b1d-b63d-a2782c961875",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1355,
+                  "y": 244.73
+                }
+              ],
+              "id": "ff8ddd31-b0e8-44cd-b71e-a6d734fe2235",
+              "type": "default",
+              "selected": false,
+              "source": "0448aa9b-0d2e-4368-9aa7-65cc9a33e1ef",
+              "sourcePort": "cl79c2b3000av356dmcu6vy14",
+              "target": "1e956543-1fd3-4c11-b632-3754b4dd6946",
+              "targetPort": "cl6pd9dbu00k8356d3fxe1b4x",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "930e1f95-6a6a-418c-8ff1-867f19984527": {
+              "points": [
+                {
+                  "id": "81db065c-5412-4b2b-a34e-0420488f71c5",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1121.31,
+                  "y": 244.73
+                },
+                {
+                  "id": "40461429-6fdb-4b79-82f7-b54d96a62bad",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1165,
+                  "y": 244.73
+                }
+              ],
+              "id": "930e1f95-6a6a-418c-8ff1-867f19984527",
+              "type": "default",
+              "selected": false,
+              "source": "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa",
+              "sourcePort": "cl6pd1toy0091356d08j3oz14",
+              "target": "0448aa9b-0d2e-4368-9aa7-65cc9a33e1ef",
+              "targetPort": "cl79c2b3000at356dx5mb6six",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "6e4f819d-0554-4186-b284-801a0d4b843e": {
+              "points": [
+                {
+                  "id": "1442a7b0-b265-4684-9e92-64c273f7b530",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1553.17,
+                  "y": 244.73
+                },
+                {
+                  "id": "5d5aaa83-ee64-4264-9974-9a2ff8d81f5e",
+                  "type": "point",
+                  "selected": true,
+                  "x": 1600,
+                  "y": 244.73
+                }
+              ],
+              "id": "6e4f819d-0554-4186-b284-801a0d4b843e",
+              "type": "default",
+              "selected": false,
+              "source": "1e956543-1fd3-4c11-b632-3754b4dd6946",
+              "sourcePort": "cl6pd9dbu00ka356d5i6c7x7p",
+              "target": "98d1e788-c44c-44f0-8c1e-005c526fcf5a",
+              "targetPort": "cl6pda4am00mu356dp5d7l8rw",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "51f69e78-cefa-4ba5-ac2c-d1ed2adfb593": {
+              "points": [
+                {
+                  "id": "826869b9-aa0f-4b66-9be9-647b6085bf49",
+                  "type": "point",
+                  "selected": true,
+                  "x": 904,
+                  "y": 244.73
+                },
+                {
+                  "id": "a6f30b33-6f9d-4bd2-b89d-7e4fe026e316",
+                  "type": "point",
+                  "selected": true,
+                  "x": 940,
+                  "y": 244.73
+                }
+              ],
+              "id": "51f69e78-cefa-4ba5-ac2c-d1ed2adfb593",
+              "type": "default",
+              "selected": false,
+              "source": "ad3d66a2-e44d-4e18-930b-23d3f1fad7b2",
+              "sourcePort": "cl79cnt3t00n6356dpd8273ei",
+              "target": "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa",
+              "targetPort": "cl6pd1tox008z356d571wufdl",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "cd7cf70e-0f1a-45d7-b667-b8e029d6b26f": {
+              "points": [
+                {
+                  "id": "49c305b0-b18b-4c24-b318-dc2399720eac",
+                  "type": "point",
+                  "selected": true,
+                  "x": 299,
+                  "y": 244.73
+                },
+                {
+                  "id": "6d436353-3463-4b6d-bdb1-ed41148158ee",
+                  "type": "point",
+                  "selected": true,
+                  "x": 335,
+                  "y": 244.73
+                }
+              ],
+              "id": "cd7cf70e-0f1a-45d7-b667-b8e029d6b26f",
+              "type": "default",
+              "selected": false,
+              "source": "2fddabf6-c831-4a1e-a9dc-27599b0b7bb7",
+              "sourcePort": "cl79cnrcm00n2356dn8kn5tmq",
+              "target": "0530e82e-47a4-4449-a1a1-f827122d3f30",
+              "targetPort": "cl6pcwl00002j356d89vqey1a",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "f78bbd12-5870-4910-9e12-b2bacb5f151b": {
+              "points": [
+                {
+                  "id": "2d336059-8e3e-4e3e-b127-e2638fb29714",
+                  "type": "point",
+                  "x": 363.98,
+                  "y": 384.73
+                },
+                {
+                  "id": "a9e97451-1eeb-463c-aa1d-d32b0efbfb70",
+                  "type": "point",
+                  "x": 395,
+                  "y": 319.73
+                }
+              ],
+              "id": "f78bbd12-5870-4910-9e12-b2bacb5f151b",
+              "type": "default",
+              "selected": false,
+              "source": "09953b36-8f21-4f6d-bdde-4b9cd089989d",
+              "sourcePort": "cl79fhapy00vu356dr2nqveg1",
+              "target": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+              "targetPort": "cl6pd429i00cj356dht36qsl8",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "1ae9656d-af89-4ff0-8e80-7d8907b2f856": {
+              "points": [
+                {
+                  "id": "ac657f7b-3ae5-45fb-acb9-2d028a33fdc3",
+                  "type": "point",
+                  "x": 348.98,
+                  "y": 449.73
+                },
+                {
+                  "id": "4cc0bbd6-3091-4b03-b8e2-0e784a04984d",
+                  "type": "point",
+                  "x": 395,
+                  "y": 319.73
+                }
+              ],
+              "id": "1ae9656d-af89-4ff0-8e80-7d8907b2f856",
+              "type": "default",
+              "selected": false,
+              "source": "69996b63-7b1a-41bb-a41c-25ec516d37f3",
+              "sourcePort": "cl79g87pk0169356dajr6u3ja",
+              "target": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+              "targetPort": "cl6pd429i00cj356dht36qsl8",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "2ca5852f-271c-4068-96e5-db2bc8e03bbd": {
+              "points": [
+                {
+                  "id": "2ba5bfc7-70cb-4699-8720-f2f871d577b3",
+                  "type": "point",
+                  "x": 363.98,
+                  "y": 514.73
+                },
+                {
+                  "id": "3d041409-dad2-4833-bf68-7034c2916b09",
+                  "type": "point",
+                  "x": 395,
+                  "y": 319.73
+                }
+              ],
+              "id": "2ca5852f-271c-4068-96e5-db2bc8e03bbd",
+              "type": "default",
+              "selected": false,
+              "source": "5725d62e-b380-4e39-a342-95e7c04451e9",
+              "sourcePort": "cl79gg1xn01ad356dvrq4hl14",
+              "target": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+              "targetPort": "cl6pd429i00cj356dht36qsl8",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "d4bb69d5-ecf8-4599-a3c5-6bae02b5930e": {
+              "points": [
+                {
+                  "id": "d8c82b42-7a62-4d4d-996f-6a20265bb6e2",
+                  "type": "point",
+                  "x": 363.98,
+                  "y": 579.73
+                },
+                {
+                  "id": "9480291e-40e7-45ce-bc1e-4d3ddb1906f3",
+                  "type": "point",
+                  "x": 395,
+                  "y": 319.73
+                }
+              ],
+              "id": "d4bb69d5-ecf8-4599-a3c5-6bae02b5930e",
+              "type": "default",
+              "selected": false,
+              "source": "d032e400-0c18-4815-b9e6-99c3c1bde093",
+              "sourcePort": "cl79gs8as01e0356dyn83tpmb",
+              "target": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+              "targetPort": "cl6pd429i00cj356dht36qsl8",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "069f3b7b-4d63-49f5-b21e-72067d57ff36": {
+              "points": [
+                {
+                  "id": "3e586398-dd37-4312-a136-d0c57bd6800c",
+                  "type": "point",
+                  "x": 363.98,
+                  "y": 644.73
+                },
+                {
+                  "id": "4060acf4-910a-448c-9209-7198e9d8fb3a",
+                  "type": "point",
+                  "x": 395,
+                  "y": 319.73
+                }
+              ],
+              "id": "069f3b7b-4d63-49f5-b21e-72067d57ff36",
+              "type": "default",
+              "selected": false,
+              "source": "8fb95407-db40-436d-8b7a-10240e721b26",
+              "sourcePort": "cl79gzop701if356dcx9cmo4u",
+              "target": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+              "targetPort": "cl6pd429i00cj356dht36qsl8",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "cf45efa4-c203-47c7-b27c-618be5201239": {
+              "points": [
+                {
+                  "id": "c9d3b0c9-dc38-4a12-84bf-01091dba9df3",
+                  "type": "point",
+                  "x": 363.98,
+                  "y": 709.73
+                },
+                {
+                  "id": "cfb45043-a434-434c-84d7-fb5a55e866a5",
+                  "type": "point",
+                  "x": 395,
+                  "y": 319.73
+                }
+              ],
+              "id": "cf45efa4-c203-47c7-b27c-618be5201239",
+              "type": "default",
+              "selected": false,
+              "source": "e5841a55-c6f2-481a-a79c-fe25fe0b3dc2",
+              "sourcePort": "cl79j6nk201k3356dggfqt6rj",
+              "target": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+              "targetPort": "cl6pd429i00cj356dht36qsl8",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "96aebdab-4d62-4db1-addd-588f2242fa4d": {
+              "points": [
+                {
+                  "id": "7e4e5b8e-47c7-4c71-90b8-34cf24500284",
+                  "type": "point",
+                  "x": 358.98,
+                  "y": 774.73
+                },
+                {
+                  "id": "ff0fd14c-41cb-42db-b5e9-65a12d3e1161",
+                  "type": "point",
+                  "x": 395,
+                  "y": 319.73
+                }
+              ],
+              "id": "96aebdab-4d62-4db1-addd-588f2242fa4d",
+              "type": "default",
+              "selected": false,
+              "source": "9d4715bf-7195-4bd1-a66f-dd9edcc46c2b",
+              "sourcePort": "cl79jjr3h01z3356d0phvqxwc",
+              "target": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+              "targetPort": "cl6pd429i00cj356dht36qsl8",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "c17df597-14c7-4d58-8eb4-b5d2f36e6831": {
+              "points": [
+                {
+                  "id": "8710ef56-5bcb-450c-810a-4883877f62f3",
+                  "type": "point",
+                  "selected": true,
+                  "x": -246,
+                  "y": 244.73
+                },
+                {
+                  "id": "118f5331-a024-4760-8373-ab1f2ee8cca9",
+                  "type": "point",
+                  "selected": true,
+                  "x": -225,
+                  "y": 244.73
+                }
+              ],
+              "id": "c17df597-14c7-4d58-8eb4-b5d2f36e6831",
+              "type": "default",
+              "selected": false,
+              "source": "599f05c8-6a7d-4e8c-aeff-10b2d8e5dd7c",
+              "sourcePort": "cl7b1ahq50055356dacu8kc3j",
+              "target": "a9c2b976-478d-483e-afe1-c61b33297a61",
+              "targetPort": "cl7b1aooz005b356dyn8vkruf",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "b015f21e-1cfe-412c-b47a-64a3658789ad": {
+              "points": [
+                {
+                  "id": "f084df7e-1401-4387-bed2-37fea0de9e6c",
+                  "type": "point",
+                  "x": 908.98,
+                  "y": 319.73
+                },
+                {
+                  "id": "1433a230-f61e-474c-aa6b-d6d0e37c02cc",
+                  "type": "point",
+                  "x": 940,
+                  "y": 244.73
+                }
+              ],
+              "id": "b015f21e-1cfe-412c-b47a-64a3658789ad",
+              "type": "default",
+              "selected": false,
+              "source": "4cbe2721-721c-4e38-bda2-5fdabe8e6f29",
+              "sourcePort": "cl7b1gjmc00mr356d4bxxe2s6",
+              "target": "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa",
+              "targetPort": "cl6pd1tox008z356d571wufdl",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "7c581348-cd6d-437f-9bc2-40c63785e641": {
+              "points": [
+                {
+                  "id": "8e3a3e02-46b6-4563-921a-db94d7fdae18",
+                  "type": "point",
+                  "x": 908.98,
+                  "y": 344.89
+                },
+                {
+                  "id": "db3a355c-8b54-45bc-91fb-f05e3fb8905c",
+                  "type": "point",
+                  "x": 1605,
+                  "y": 344.73
+                }
+              ],
+              "id": "7c581348-cd6d-437f-9bc2-40c63785e641",
+              "type": "default",
+              "selected": false,
+              "source": "4cbe2721-721c-4e38-bda2-5fdabe8e6f29",
+              "sourcePort": "cl7b1gjmc00mt356dicy97ptv",
+              "target": "fe00f615-fb9c-48b6-9b8e-9f10be87d0d8",
+              "targetPort": "cl6pdad2s00nh356d2cw9djz2",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "0ce57a24-2471-41f2-a76a-ae41b1ceda25": {
+              "points": [
+                {
+                  "id": "50279101-f8d6-48be-bc28-b10490947fd6",
+                  "type": "point",
+                  "x": 549,
+                  "y": 319.73
+                },
+                {
+                  "id": "354bdad6-fe29-472b-a42f-cb4490a326fd",
+                  "type": "point",
+                  "x": 575,
+                  "y": 319.73
+                }
+              ],
+              "id": "0ce57a24-2471-41f2-a76a-ae41b1ceda25",
+              "type": "default",
+              "selected": false,
+              "source": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+              "sourcePort": "cl6pd429i00cl356dlq018djg",
+              "target": "d933d5ec-570e-462d-9db6-233897dc40d9",
+              "targetPort": "cl7b1qoou013s356dpem7x180",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "82acd739-cc37-4e53-97ce-c886e34aafa5": {
+              "points": [
+                {
+                  "id": "4fe36a4b-2619-45a5-a8b3-e37e3dea7ab0",
+                  "type": "point",
+                  "x": 729,
+                  "y": 319.73
+                },
+                {
+                  "id": "9d47b7c8-9a03-43b0-a83c-9f234880d5df",
+                  "type": "point",
+                  "x": 755,
+                  "y": 319.73
+                }
+              ],
+              "id": "82acd739-cc37-4e53-97ce-c886e34aafa5",
+              "type": "default",
+              "selected": false,
+              "source": "d933d5ec-570e-462d-9db6-233897dc40d9",
+              "sourcePort": "cl7b1qoou013u356dv6lre7uj",
+              "target": "4cbe2721-721c-4e38-bda2-5fdabe8e6f29",
+              "targetPort": "cl7b1gjmc00mp356dlu4f2k7u",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "f516c4b7-6faf-4d38-8eb6-b8f9bbde8330": {
+              "points": [
+                {
+                  "id": "1eb2216d-9e33-49e6-beba-e945fb6b4e59",
+                  "type": "point",
+                  "x": 1754,
+                  "y": 244.73
+                },
+                {
+                  "id": "610c8316-f38c-411d-bcae-80eff17f561a",
+                  "type": "point",
+                  "x": 1790,
+                  "y": 244.73
+                }
+              ],
+              "id": "f516c4b7-6faf-4d38-8eb6-b8f9bbde8330",
+              "type": "default",
+              "selected": false,
+              "source": "98d1e788-c44c-44f0-8c1e-005c526fcf5a",
+              "sourcePort": "cl6pda4am00mw356dwqy93u3s",
+              "target": "8a1da520-3fa7-45bf-b25e-68c82d997377",
+              "targetPort": "cl7gl838k007h356ddzo8m0j9",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "5b949484-e9ce-4cb4-b2d5-c388eee89c65": {
+              "points": [
+                {
+                  "id": "3dd28483-4316-40ed-b7a9-9b2fa8cad28a",
+                  "type": "point",
+                  "x": 1999.88,
+                  "y": 244.73
+                },
+                {
+                  "id": "691b69e5-af98-456b-a20c-3575c2e23289",
+                  "type": "point",
+                  "x": 2030,
+                  "y": 244.73
+                }
+              ],
+              "id": "5b949484-e9ce-4cb4-b2d5-c388eee89c65",
+              "type": "default",
+              "selected": false,
+              "source": "8a1da520-3fa7-45bf-b25e-68c82d997377",
+              "sourcePort": "cl7gl838k007j356dbb1cm001",
+              "target": "d6f30ec2-9ca2-4437-9854-ee468460739d",
+              "targetPort": "cl7gls47b00jk356dny3qqjjo",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "22ad009a-ef38-4829-a2ad-24f4214df807": {
+              "points": [
+                {
+                  "id": "27654746-737e-4aec-8279-aaf77220b935",
+                  "type": "point",
+                  "x": -298.05,
+                  "y": -165.27
+                },
+                {
+                  "id": "e4fc3739-4756-4109-9031-8aef85f01608",
+                  "type": "point",
+                  "x": -240,
+                  "y": -185.27
+                }
+              ],
+              "id": "22ad009a-ef38-4829-a2ad-24f4214df807",
+              "type": "default",
+              "selected": false,
+              "source": "97ea1193-79be-43b2-a2b3-b7b4487d9e45",
+              "sourcePort": "cl7te6tm000ka356dv10jplug",
+              "target": "dbc2db13-d079-47c7-8433-c1a00517ac09",
+              "targetPort": "cl7te5hbg00fd356dcf3fqxfb",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "ed970c59-c943-43a5-8e32-9f44bb599fda": {
+              "points": [
+                {
+                  "id": "18eb96f4-24a6-40bc-935c-6ab1b12cb1c5",
+                  "type": "point",
+                  "selected": true,
+                  "x": -292.52,
+                  "y": -230.27
+                },
+                {
+                  "id": "e36a63de-2281-4b3c-9a8c-4ab01ae93d25",
+                  "type": "point",
+                  "selected": true,
+                  "x": -240,
+                  "y": -185.27
+                }
+              ],
+              "id": "ed970c59-c943-43a5-8e32-9f44bb599fda",
+              "type": "default",
+              "selected": false,
+              "source": "f3c5e11e-c754-4d01-8622-8d1e0789c1be",
+              "sourcePort": "cl7te12ru00dj356dxxayfn02",
+              "target": "dbc2db13-d079-47c7-8433-c1a00517ac09",
+              "targetPort": "cl7te5hbg00fd356dcf3fqxfb",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "1ba10ee6-9da9-47bc-bfb9-e74ffad1b142": {
+              "points": [
+                {
+                  "id": "306f6683-c45b-4cde-b28d-c852910e5c40",
+                  "type": "point",
+                  "x": 114,
+                  "y": 244.73
+                },
+                {
+                  "id": "18168d82-4988-4b78-b2ab-773d63a3d733",
+                  "type": "point",
+                  "x": 145,
+                  "y": 244.73
+                }
+              ],
+              "id": "1ba10ee6-9da9-47bc-bfb9-e74ffad1b142",
+              "type": "default",
+              "selected": false,
+              "source": "7ba37af3-d722-4931-8168-2a6c5b0344bd",
+              "sourcePort": "cl7te993p00o0356d61u8vb8q",
+              "target": "2fddabf6-c831-4a1e-a9dc-27599b0b7bb7",
+              "targetPort": "cl79cnrcm00n0356dyr0cozyt",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "47e8f07a-f81a-4a18-ab96-63e504389ba4": {
+              "points": [
+                {
+                  "id": "97cf9f81-5a46-4b5a-92cf-3ab882050322",
+                  "type": "point",
+                  "x": -66.59,
+                  "y": 244.73
+                },
+                {
+                  "id": "11c0f921-3508-4a1d-a5be-4b5806d250b1",
+                  "type": "point",
+                  "x": -40,
+                  "y": 244.73
+                }
+              ],
+              "id": "47e8f07a-f81a-4a18-ab96-63e504389ba4",
+              "type": "default",
+              "selected": false,
+              "source": "a9c2b976-478d-483e-afe1-c61b33297a61",
+              "sourcePort": "cl7b1aooz005d356d721o44jw",
+              "target": "7ba37af3-d722-4931-8168-2a6c5b0344bd",
+              "targetPort": "cl7te993p00ny356dwgnhgt4q",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "ca1b4475-11bc-483d-a78e-81e611030477": {
+              "points": [
+                {
+                  "id": "52e6151f-c784-49bc-9391-1678699a7041",
+                  "type": "point",
+                  "x": -247.52,
+                  "y": 174.73
+                },
+                {
+                  "id": "8979d9de-536e-4102-861e-c79d0c466005",
+                  "type": "point",
+                  "x": -225,
+                  "y": 244.73
+                }
+              ],
+              "id": "ca1b4475-11bc-483d-a78e-81e611030477",
+              "type": "default",
+              "selected": false,
+              "source": "6544a26b-5464-466b-bf0c-ff174f44ee3b",
+              "sourcePort": "cl7th16g300qs356d2sqnz7sl",
+              "target": "a9c2b976-478d-483e-afe1-c61b33297a61",
+              "targetPort": "cl7b1aooz005b356dyn8vkruf",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "5affeba9-c40e-49d6-8558-10dec3f8a317": {
+              "points": [
+                {
+                  "id": "7a5d0ec6-0ce8-45b2-a4bd-e0949b1582e6",
+                  "type": "point",
+                  "x": 1999.88,
+                  "y": 244.73
+                },
+                {
+                  "id": "b5756918-76d7-48aa-9493-3e7f2173b83e",
+                  "type": "point",
+                  "x": 2030,
+                  "y": 184.73
+                }
+              ],
+              "id": "5affeba9-c40e-49d6-8558-10dec3f8a317",
+              "type": "default",
+              "selected": false,
+              "source": "8a1da520-3fa7-45bf-b25e-68c82d997377",
+              "sourcePort": "cl7gl838k007j356dbb1cm001",
+              "target": "c1b9e7ac-f1bb-4e34-9727-505500f06c8b",
+              "targetPort": "cl7b1ai980057356dxrhvthsg",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "4d85e38e-cce2-4607-9d55-e678543bf9db": {
+              "points": [
+                {
+                  "id": "56729834-cb7f-4f63-b735-453d2dae604d",
+                  "type": "point",
+                  "x": 586.72,
+                  "y": 244.73
+                },
+                {
+                  "id": "52df9137-bc46-4ee0-a1a3-b5ef3a860006",
+                  "type": "point",
+                  "x": 600,
+                  "y": 124.73
+                }
+              ],
+              "id": "4d85e38e-cce2-4607-9d55-e678543bf9db",
+              "type": "default",
+              "selected": false,
+              "source": "0530e82e-47a4-4449-a1a1-f827122d3f30",
+              "sourcePort": "cl6pcwl00002l356dv3fugyim",
+              "target": "f2687c70-42c1-4c95-8056-efb7cf1f5e14",
+              "targetPort": "cl7tluth500f5356d8qr1gzcc",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "c85922ce-17d6-444d-bc75-740ad709ef36": {
+              "points": [
+                {
+                  "id": "e563d43b-ac1d-4806-bc96-c713f11fb3df",
+                  "type": "point",
+                  "x": 918.83,
+                  "y": 149.89
+                },
+                {
+                  "id": "01bba8bd-ffd5-460c-94be-563ae10a440a",
+                  "type": "point",
+                  "x": 965,
+                  "y": 149.73
+                }
+              ],
+              "id": "c85922ce-17d6-444d-bc75-740ad709ef36",
+              "type": "default",
+              "selected": false,
+              "source": "f2687c70-42c1-4c95-8056-efb7cf1f5e14",
+              "sourcePort": "cl7tluth500f9356dr3tlw56o",
+              "target": "f9cfbf51-49b3-495e-af76-2c664eeffd5d",
+              "targetPort": "cl7tlv7as00gi356d0uv48emn",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "2922bab9-074c-4edb-8f85-9ac7662b02d1": {
+              "points": [
+                {
+                  "id": "da7a5e79-3b37-4c22-9d85-656ffaeb049f",
+                  "type": "point",
+                  "x": 918.83,
+                  "y": 124.73
+                },
+                {
+                  "id": "e1b12ff6-3b7d-40f3-ab10-535708d37696",
+                  "type": "point",
+                  "x": 645,
+                  "y": 244.73
+                }
+              ],
+              "id": "2922bab9-074c-4edb-8f85-9ac7662b02d1",
+              "type": "default",
+              "selected": false,
+              "source": "f2687c70-42c1-4c95-8056-efb7cf1f5e14",
+              "sourcePort": "cl7tluth500f7356dzol5l761",
+              "target": "ad3d66a2-e44d-4e18-930b-23d3f1fad7b2",
+              "targetPort": "cl79cnt3t00n4356dlaogfgrq",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            },
+            "5c6c8f72-ae25-496d-bd22-570c75aba643": {
+              "points": [
+                {
+                  "id": "2c0092f8-4ba5-4589-8c5f-cd43476e09e4",
+                  "type": "point",
+                  "x": 1754,
+                  "y": 244.73
+                },
+                {
+                  "id": "0a6a86ac-116f-4b63-a3c8-68c8811d89d2",
+                  "type": "point",
+                  "x": 1790,
+                  "y": 179.73
+                }
+              ],
+              "id": "5c6c8f72-ae25-496d-bd22-570c75aba643",
+              "type": "default",
+              "selected": false,
+              "source": "98d1e788-c44c-44f0-8c1e-005c526fcf5a",
+              "sourcePort": "cl6pda4am00mw356dwqy93u3s",
+              "target": "101d2d12-3fc2-4f8b-8dd7-217a20c4de1c",
+              "targetPort": "cl7v00z4100ry356en1s8f6j5",
+              "labels": [],
+              "width": 3,
+              "curvyness": 50
+            }
+          }
+        },
+        {
+          "id": "012be5af-6196-4eda-a197-9bd527820ae3",
+          "type": "diagram-nodes",
+          "isSvg": false,
+          "transformed": true,
+          "models": {
+            "0530e82e-47a4-4449-a1a1-f827122d3f30": {
+              "id": "0530e82e-47a4-4449-a1a1-f827122d3f30",
+              "type": "query",
+              "selected": false,
+              "x": 335,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl6pcwl00002j356d89vqey1a",
+                  "type": "default",
+                  "x": 327,
+                  "y": 236.73,
+                  "name": "cl6pcwl00002k356dyvmkkvwn",
+                  "parentNode": "0530e82e-47a4-4449-a1a1-f827122d3f30",
+                  "links": [
+                    "cd7cf70e-0f1a-45d7-b667-b8e029d6b26f"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl6pcwl00002l356dv3fugyim",
+                  "type": "default",
+                  "x": 578.72,
+                  "y": 236.73,
+                  "name": "cl6pcwl00002m356dhnxy3qq0",
+                  "parentNode": "0530e82e-47a4-4449-a1a1-f827122d3f30",
+                  "links": [
+                    "4d85e38e-cce2-4607-9d55-e678543bf9db"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "api": "application",
+                "variablesTransform": "{\n  \"where\": {\n    \"id\": {\n      \"_eq\": $state.context.CONSTANTS.PARAMETERS.MASTER_DATA_FLOW_CONFIG_ID\n    },\n    \"active\": {\n      \"_eq\": true\n    }\n  }\n}",
+                "query": "query Query($where: MasterDataFlowConfigurationWhereInput, $orderBy: [MasterDataFlowConfigurationOrderByInput!], $first: Int, $after: String) {\n  masterDataFlowConfiguration(where: $where, orderBy: $orderBy, first: $first, after: $after) {\n    edges {\n      node {\n        id\n        dataFlowConfiguration\n        connectionConfiguration\n        topicPrefix\n        active\n        connection {\n          name\n        }\n      }\n    }\n  }\n}\n",
+                "nextNodes": [
+                  "f2687c70-42c1-4c95-8056-efb7cf1f5e14"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Query Master Data Flow Configuration"
+            },
+            "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa": {
+              "id": "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa",
+              "type": "transform",
+              "selected": false,
+              "x": 940,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl6pd1tox008z356d571wufdl",
+                  "type": "default",
+                  "x": 932,
+                  "y": 236.73,
+                  "name": "cl6pd1toy0090356d7qi38o5c",
+                  "parentNode": "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa",
+                  "links": [
+                    "51f69e78-cefa-4ba5-ac2c-d1ed2adfb593",
+                    "b015f21e-1cfe-412c-b47a-64a3658789ad"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl6pd1toy0091356d08j3oz14",
+                  "type": "default",
+                  "x": 1113.31,
+                  "y": 236.73,
+                  "name": "cl6pd1toy0092356d6vu2k62s",
+                  "parentNode": "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa",
+                  "links": [
+                    "930e1f95-6a6a-418c-8ff1-867f19984527"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "nextNodes": [
+                  "0448aa9b-0d2e-4368-9aa7-65cc9a33e1ef"
+                ],
+                "transform": "(\n  /* $state := { \"context\": $$.state.context }; */\n  $CONSTANTS := $state.context.CONSTANTS;\n  $PARAMETERS := $CONSTANTS.PARAMETERS;\n  $STOP_AFTER_IMPORT := $PARAMETERS.STOP_AFTER_IMPORT;\n  $DATA_FLOW_OVERRIDE := $PARAMETERS.DATA_FLOW_OVERRIDE;\n  $IGNORE_MODIFIED_AFTER := $PARAMETERS.IGNORE_MODIFIED_AFTER;\n  \n  $plexOdbcConfig := $CONSTANTS.masterDataFlowConfiguration;\n  $requestedFlow := $plexOdbcConfig.requestedFlow;\n  $dataFlowConfig := $plexOdbcConfig.dataFlowConfiguration;\n  \n  $DATE_DEFAULTS := {\n    \"modifiedAfter\": $moment(\"01-01-1970\"),\n    \"modifiedBefore\": $moment().add(1,'days').endOf('day')\n  };\n  \n  $DATE_RANGE_DEFAULTS := {\n    \"modifiedAfter\": {\n      \"data\": {\n        \"unit\": \"week\",\n        \"offset\": -1,\n        \"range\": 1,\n        \"base\": \"startOf\"\n      },\n      \"label\": \"DEFAULTED\"\n    },\n    \"modifiedBefore\": {\n      \"data\": {},\n      \"label\": \"DEFAULTED\"\n    }\n  };\n  \n  $getNextFlow := function($requestedFlow) {\n    $isNilOrEmpty($DATA_FLOW_OVERRIDE) ? (\n      $isNilOrEmpty($requestedFlow.id) ? \n        $dataFlowConfig.flows[0] \n      :\n      $findFirstIndex($dataFlowConfig.flows, function($v) {\n        $v.id = $requestedFlow.id\n      })~>function($index) {\n        $dataFlowConfig.flows[$index + 1]\n      }\n    )\n    :\n    $dataFlowConfig.flows[id = $DATA_FLOW_OVERRIDE]\n  };\n  \n  $dateRangeObjectToDate := function($range,$dateType) {\n    (\n      $IGNORE_MODIFIED_AFTER = true or $isNilOrEmpty($range) ? \n        $lookup($DATE_DEFAULTS,$dateType)\n      :\n      $range.base = \"startOf\" ?\n        $moment().startOf($range.unit).add($range.offset,$range.unit)\n      :\n      $range.base = \"endOf\" ?\n        $moment().endOf($range.unit).add($range.offset,$range.unit)\n    )\n  };\n  \n  $applyFilterDefaults := function($filters) {\n    (\n      $filters := $coalesce([$filters[0], {}]);\n      $defaults := [$keys($DATE_RANGE_DEFAULTS)];\n      \n      $mergeDeep([\n        $filters,\n        $defaults.(\n          $default := $;\n          $curFilterValue := $lookup($filters,$default);\n          $isNilOrEmpty($curFilterValue) ? \n            {\n              $default: $lookup($DATE_RANGE_DEFAULTS,$default) \n            }\n          :\n            {\n              $default: $curFilterValue\n            }\n        )\n      ])\n    )\n  };\n  \n  $applyModifiedFilter := function($flow) {\n    $flow~>| $ | (\n      $filters := $applyFilterDefaults(filters);\n      {\n        \"filters\": $filters\n        ~>| modifiedAfter | {\n          \"formattedDate\": $dateRangeObjectToDate(data,\"modifiedAfter\")\n        }|\n        ~>| modifiedBefore | {\n          \"formattedDate\": $dateRangeObjectToDate(data,\"modifiedBefore\")\n        }|\n      }\n    )|\n  };\n  \n  $CONSTANTS~>| $.masterDataFlowConfiguration | {},[\"requestedFlow\"] |\n  ~>| $.masterDataFlowConfiguration | (\n    $nextFlow := $getNextFlow($requestedFlow);\n    $nextFlow := $applyModifiedFilter($nextFlow);\n    { \n      \"requestedFlow\": $nextFlow\n    }\n  ),[] |\n)"
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Determine Next Flow Call"
+            },
+            "7f199415-5475-407a-a31c-f03ae3b2f1e7": {
+              "id": "7f199415-5475-407a-a31c-f03ae3b2f1e7",
+              "type": "topic",
+              "selected": false,
+              "x": 75,
+              "y": 280,
+              "ports": [
+                {
+                  "id": "cl6pd2yvh00br356dsg9q4jxn",
+                  "type": "default",
+                  "x": 351.42,
+                  "y": 311.73,
+                  "name": "cl6pd2yvh00bs356d4hi7uv0t",
+                  "parentNode": "7f199415-5475-407a-a31c-f03ae3b2f1e7",
+                  "links": [
+                    "0b999114-f75c-413b-8580-1407c7dfc48d"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Message",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "topicName": "PublishToMasterDataImport",
+                "nextNodes": [
+                  "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Subscribe on Publish To Master Data Import"
+            },
+            "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8": {
+              "id": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+              "type": "setContext",
+              "selected": false,
+              "x": 395,
+              "y": 280,
+              "ports": [
+                {
+                  "id": "cl6pd429i00cj356dht36qsl8",
+                  "type": "default",
+                  "x": 387,
+                  "y": 311.73,
+                  "name": "cl6pd429i00ck356dn9socv6v",
+                  "parentNode": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+                  "links": [
+                    "0b999114-f75c-413b-8580-1407c7dfc48d",
+                    "f78bbd12-5870-4910-9e12-b2bacb5f151b",
+                    "1ae9656d-af89-4ff0-8e80-7d8907b2f856",
+                    "2ca5852f-271c-4068-96e5-db2bc8e03bbd",
+                    "d4bb69d5-ecf8-4599-a3c5-6bae02b5930e",
+                    "069f3b7b-4d63-49f5-b21e-72067d57ff36",
+                    "cf45efa4-c203-47c7-b27c-618be5201239",
+                    "96aebdab-4d62-4db1-addd-588f2242fa4d"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl6pd429i00cl356dlq018djg",
+                  "type": "default",
+                  "x": 541,
+                  "y": 311.73,
+                  "name": "cl6pd429i00cm356dkg7mvcq1",
+                  "parentNode": "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8",
+                  "links": [
+                    "0ce57a24-2471-41f2-a76a-ae41b1ceda25"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "nextNodes": [
+                  "d933d5ec-570e-462d-9db6-233897dc40d9"
+                ],
+                "transform": "{\n  \"CONSTANTS\": value.CONSTANTS~>| $ | {},[\"METRICS\"]|~>| $.PARAMETERS | {},[\"DATA_FLOW_OVERRIDE\"] |,\n  \"PRIOR_FLOW_METRICS\": value.CONSTANTS.METRICS\n}"
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Set Context"
+            },
+            "1e956543-1fd3-4c11-b632-3754b4dd6946": {
+              "id": "1e956543-1fd3-4c11-b632-3754b4dd6946",
+              "type": "ifElse",
+              "selected": false,
+              "x": 1355,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl6pd9dbu00k8356d3fxe1b4x",
+                  "type": "default",
+                  "x": 1347,
+                  "y": 236.73,
+                  "name": "cl6pd9dbu00k9356don368tzf",
+                  "parentNode": "1e956543-1fd3-4c11-b632-3754b4dd6946",
+                  "links": [
+                    "ff8ddd31-b0e8-44cd-b71e-a6d734fe2235"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl6pd9dbu00ka356d5i6c7x7p",
+                  "type": "default",
+                  "x": 1545.17,
+                  "y": 236.73,
+                  "name": "cl6pd9dbu00kb356dpaouvr5y",
+                  "parentNode": "1e956543-1fd3-4c11-b632-3754b4dd6946",
+                  "links": [
+                    "6e4f819d-0554-4186-b284-801a0d4b843e"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "True",
+                  "fieldPath": "data.onTrueNextNodes"
+                },
+                {
+                  "id": "cl6pd9dbu00kc356d7kj31vrq",
+                  "type": "default",
+                  "x": 1545.17,
+                  "y": 261.89,
+                  "name": "cl6pd9dbu00kd356dubndfmyg",
+                  "parentNode": "1e956543-1fd3-4c11-b632-3754b4dd6946",
+                  "links": [
+                    "fc770ac1-1e9b-4d96-b480-b3cc4a75bfb5"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "False",
+                  "fieldPath": "data.onFalseNextNodes"
+                }
+              ],
+              "data": {
+                "onTrueNextNodes": [
+                  "98d1e788-c44c-44f0-8c1e-005c526fcf5a"
+                ],
+                "onFalseNextNodes": [
+                  "fe00f615-fb9c-48b6-9b8e-9f10be87d0d8"
+                ],
+                "transform": "$isNilOrEmpty($state.context.CONSTANTS.masterDataFlowConfiguration.requestedFlow.id)~>$not"
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Are there more flows to run?"
+            },
+            "98d1e788-c44c-44f0-8c1e-005c526fcf5a": {
+              "id": "98d1e788-c44c-44f0-8c1e-005c526fcf5a",
+              "type": "transform",
+              "selected": false,
+              "x": 1600,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl6pda4am00mu356dp5d7l8rw",
+                  "type": "default",
+                  "x": 1592,
+                  "y": 236.73,
+                  "name": "cl6pda4am00mv356dcs34flp8",
+                  "parentNode": "98d1e788-c44c-44f0-8c1e-005c526fcf5a",
+                  "links": [
+                    "6e4f819d-0554-4186-b284-801a0d4b843e"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl6pda4am00mw356dwqy93u3s",
+                  "type": "default",
+                  "x": 1746,
+                  "y": 236.73,
+                  "name": "cl6pda4am00mx356d1kpnbpne",
+                  "parentNode": "98d1e788-c44c-44f0-8c1e-005c526fcf5a",
+                  "links": [
+                    "f516c4b7-6faf-4d38-8eb6-b8f9bbde8330",
+                    "5c6c8f72-ae25-496d-bd22-570c75aba643"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "nextNodes": [
+                  "8a1da520-3fa7-45bf-b25e-68c82d997377",
+                  "101d2d12-3fc2-4f8b-8dd7-217a20c4de1c"
+                ],
+                "transform": "{\n  \"CONSTANTS\": $state.context.CONSTANTS\n    ~>| $ | {\n      \"METRICS\": {\n        \"STARTED_AT\": $now()\n      }\n    }\n  |\n}"
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Format Publish"
+            },
+            "fe00f615-fb9c-48b6-9b8e-9f10be87d0d8": {
+              "id": "fe00f615-fb9c-48b6-9b8e-9f10be87d0d8",
+              "type": "log",
+              "selected": false,
+              "x": 1605,
+              "y": 305,
+              "ports": [
+                {
+                  "id": "cl6pdad2s00nh356d2cw9djz2",
+                  "type": "default",
+                  "x": 1597,
+                  "y": 336.73,
+                  "name": "cl6pdad2s00ni356dj63jatvw",
+                  "parentNode": "fe00f615-fb9c-48b6-9b8e-9f10be87d0d8",
+                  "links": [
+                    "fc770ac1-1e9b-4d96-b480-b3cc4a75bfb5",
+                    "7c581348-cd6d-437f-9bc2-40c63785e641"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl6pdad2s00nj356du0z542n1",
+                  "type": "default",
+                  "x": 1831.84,
+                  "y": 336.73,
+                  "name": "cl6pdad2s00nk356df5p4bbfs",
+                  "parentNode": "fe00f615-fb9c-48b6-9b8e-9f10be87d0d8",
+                  "links": [],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "messageTransform": "\"Master Data Flow is complete for Master Data Flow Configuration: \" & $state.context.CONSTANTS.PARAMETERS.MASTER_DATA_FLOW_CONFIG_ID",
+                "level": "Info",
+                "includeContext": false,
+                "includePayload": false
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Master Data Flow Import Complete"
+            },
+            "0448aa9b-0d2e-4368-9aa7-65cc9a33e1ef": {
+              "id": "0448aa9b-0d2e-4368-9aa7-65cc9a33e1ef",
+              "type": "setContext",
+              "selected": false,
+              "x": 1165,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl79c2b3000at356dx5mb6six",
+                  "type": "default",
+                  "x": 1157,
+                  "y": 236.73,
+                  "name": "cl79c2b3000au356d4t4p2s0n",
+                  "parentNode": "0448aa9b-0d2e-4368-9aa7-65cc9a33e1ef",
+                  "links": [
+                    "930e1f95-6a6a-418c-8ff1-867f19984527"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl79c2b3000av356dmcu6vy14",
+                  "type": "default",
+                  "x": 1311,
+                  "y": 236.73,
+                  "name": "cl79c2b3000aw356dz28vfdw8",
+                  "parentNode": "0448aa9b-0d2e-4368-9aa7-65cc9a33e1ef",
+                  "links": [
+                    "ff8ddd31-b0e8-44cd-b71e-a6d734fe2235"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "nextNodes": [
+                  "1e956543-1fd3-4c11-b632-3754b4dd6946"
+                ],
+                "transform": "$state.context~>| $.CONSTANTS | {},[\"masterDataFlowConfiguration\"] |\n              ~>| $.CONSTANTS | { \"masterDataFlowConfiguration\": $$.masterDataFlowConfiguration }|"
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Reset Context"
+            },
+            "2fddabf6-c831-4a1e-a9dc-27599b0b7bb7": {
+              "id": "2fddabf6-c831-4a1e-a9dc-27599b0b7bb7",
+              "type": "setContext",
+              "selected": false,
+              "x": 145,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl79cnrcm00n0356dyr0cozyt",
+                  "type": "default",
+                  "x": 137,
+                  "y": 236.73,
+                  "name": "cl79cnrcm00n1356df2ibiuri",
+                  "parentNode": "2fddabf6-c831-4a1e-a9dc-27599b0b7bb7",
+                  "links": [
+                    "1ba10ee6-9da9-47bc-bfb9-e74ffad1b142"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl79cnrcm00n2356dn8kn5tmq",
+                  "type": "default",
+                  "x": 291,
+                  "y": 236.73,
+                  "name": "cl79cnrcm00n3356d225cqnao",
+                  "parentNode": "2fddabf6-c831-4a1e-a9dc-27599b0b7bb7",
+                  "links": [
+                    "cd7cf70e-0f1a-45d7-b667-b8e029d6b26f"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "transform": "{\n  \"CONSTANTS\": {\n    \"PARAMETERS\": {\n      \"STOP_AFTER_IMPORT\": $coalesce([stopAfterImport,false]),\n      \"DATA_FLOW_OVERRIDE\": dataFlowToRun,\n      \"MASTER_DATA_FLOW_CONFIG_ID\": masterDataFlowConfigId,\n      \"IGNORE_MODIFIED_AFTER\": $coalesce([ignoreModifiedAfter,false])\n    }\n  }\n}",
+                "nextNodes": [
+                  "0530e82e-47a4-4449-a1a1-f827122d3f30"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Set Initial Context"
+            },
+            "ad3d66a2-e44d-4e18-930b-23d3f1fad7b2": {
+              "id": "ad3d66a2-e44d-4e18-930b-23d3f1fad7b2",
+              "type": "mergeContext",
+              "selected": false,
+              "x": 645,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl79cnt3t00n4356dlaogfgrq",
+                  "type": "default",
+                  "x": 637,
+                  "y": 236.73,
+                  "name": "cl79cnt3t00n5356dqmgjyxx5",
+                  "parentNode": "ad3d66a2-e44d-4e18-930b-23d3f1fad7b2",
+                  "links": [
+                    "2922bab9-074c-4edb-8f85-9ac7662b02d1"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl79cnt3t00n6356dpd8273ei",
+                  "type": "default",
+                  "x": 896,
+                  "y": 236.73,
+                  "name": "cl79cnt3t00n7356d0d4uk3pg",
+                  "parentNode": "ad3d66a2-e44d-4e18-930b-23d3f1fad7b2",
+                  "links": [
+                    "51f69e78-cefa-4ba5-ac2c-d1ed2adfb593"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "transform": "{\n  \"CONSTANTS\": {\n    \"masterDataFlowConfiguration\": masterDataFlowConfiguration.edges.node~>| $ | \n      {\n        \"connectionName\": connection.name,\n        \"dataFlowConfiguration\": dataFlowConfiguration~>| $ | { \n          \"flows\": [\n            (\n              $activeFlows := [flows[active = true]];\n              $activeFlows~>| $ | {\n                \"id\": dataFlow.id\n              }|\n            )\n          ]\n        } |\n      },\n      [\"connection\"]\n    |\n  }\n}",
+                "nextNodes": [
+                  "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Merge Master Configuration To Context"
+            },
+            "09953b36-8f21-4f6d-bdde-4b9cd089989d": {
+              "id": "09953b36-8f21-4f6d-bdde-4b9cd089989d",
+              "type": "debugSource",
+              "selected": false,
+              "x": 210,
+              "y": 345,
+              "ports": [
+                {
+                  "id": "cl79fhapy00vu356dr2nqveg1",
+                  "type": "default",
+                  "x": 355.98,
+                  "y": 376.73,
+                  "name": "cl79fhapy00vv356dop0e9hiu",
+                  "parentNode": "09953b36-8f21-4f6d-bdde-4b9cd089989d",
+                  "links": [
+                    "f78bbd12-5870-4910-9e12-b2bacb5f151b"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "payload": {
+                  "value": {
+                    "CONSTANTS": {
+                      "PARAMETERS": {
+                        "STOP_AFTER_FIRST_IMPORT": false
+                      },
+                      "plexOdbcConfiguration": {
+                        "id": "DEFAULT_PLEX_ODBC_CONFIG",
+                        "dataFlowConfiguration": {
+                          "flows": [
+                            {
+                              "id": "customerStageFromPlexOdbc",
+                              "active": true,
+                              "filters": [
+                                {
+                                  "modifiedAfter": {
+                                    "data": {
+                                      "unit": "day",
+                                      "offset": -1,
+                                      "range": 1,
+                                      "base": "startOf"
+                                    },
+                                    "label": "Yesterday"
+                                  }
+                                }
+                              ],
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "customersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "customerAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "suppliersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "supplierAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            }
+                          ]
+                        },
+                        "pcn": "323425",
+                        "connectionName": "Plex ODBC",
+                        "requestedFlow": {
+                          "id": "customerStageFromPlexOdbc",
+                          "active": true,
+                          "filters": [
+                            {
+                              "modifiedAfter": {
+                                "data": {
+                                  "unit": "day",
+                                  "offset": -1,
+                                  "range": 1,
+                                  "base": "startOf"
+                                },
+                                "label": "Yesterday"
+                              }
+                            }
+                          ],
+                          "pagination": {
+                            "defaultRowLimit": 500
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "context": {},
+                "nextNodes": [
+                  "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "From Flow"
+            },
+            "69996b63-7b1a-41bb-a41c-25ec516d37f3": {
+              "id": "69996b63-7b1a-41bb-a41c-25ec516d37f3",
+              "type": "debugSource",
+              "selected": false,
+              "x": 195,
+              "y": 410,
+              "ports": [
+                {
+                  "id": "cl79g87pk0169356dajr6u3ja",
+                  "type": "default",
+                  "x": 340.98,
+                  "y": 441.73,
+                  "name": "cl79g87pk016a356d3uwb57rm",
+                  "parentNode": "69996b63-7b1a-41bb-a41c-25ec516d37f3",
+                  "links": [
+                    "1ae9656d-af89-4ff0-8e80-7d8907b2f856"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "payload": {
+                  "value": {
+                    "CONSTANTS": {
+                      "PARAMETERS": {
+                        "STOP_AFTER_FIRST_IMPORT": false
+                      },
+                      "plexOdbcConfiguration": {
+                        "id": "DEFAULT_PLEX_ODBC_CONFIG",
+                        "dataFlowConfiguration": {
+                          "flows": [
+                            {
+                              "id": "customerStageFromPlexOdbc",
+                              "active": true,
+                              "filters": [
+                                {
+                                  "modifiedAfter": {
+                                    "data": {
+                                      "unit": "day",
+                                      "offset": -1,
+                                      "range": 1,
+                                      "base": "startOf"
+                                    },
+                                    "label": "Yesterday"
+                                  }
+                                }
+                              ],
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "customersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "customerAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "suppliersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "supplierAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            }
+                          ]
+                        },
+                        "pcn": "323425",
+                        "connectionName": "Plex ODBC",
+                        "requestedFlow": {
+                          "id": "customersFromPlexOdbc",
+                          "active": true,
+                          "pagination": {
+                            "defaultRowLimit": 500
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "context": {},
+                "nextNodes": [
+                  "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "From Flow 2"
+            },
+            "5725d62e-b380-4e39-a342-95e7c04451e9": {
+              "id": "5725d62e-b380-4e39-a342-95e7c04451e9",
+              "type": "debugSource",
+              "selected": false,
+              "x": 210,
+              "y": 475,
+              "ports": [
+                {
+                  "id": "cl79gg1xn01ad356dvrq4hl14",
+                  "type": "default",
+                  "x": 355.98,
+                  "y": 506.73,
+                  "name": "cl79gg1xn01ae356d65tfzoj5",
+                  "parentNode": "5725d62e-b380-4e39-a342-95e7c04451e9",
+                  "links": [
+                    "2ca5852f-271c-4068-96e5-db2bc8e03bbd"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "payload": {
+                  "value": {
+                    "CONSTANTS": {
+                      "PARAMETERS": {
+                        "STOP_AFTER_FIRST_IMPORT": false
+                      },
+                      "plexOdbcConfiguration": {
+                        "id": "DEFAULT_PLEX_ODBC_CONFIG",
+                        "dataFlowConfiguration": {
+                          "flows": [
+                            {
+                              "id": "customerStageFromPlexOdbc",
+                              "active": true,
+                              "filters": [
+                                {
+                                  "modifiedAfter": {
+                                    "data": {
+                                      "unit": "day",
+                                      "offset": -1,
+                                      "range": 1,
+                                      "base": "startOf"
+                                    },
+                                    "label": "Yesterday"
+                                  }
+                                }
+                              ],
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "customersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "customerAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "suppliersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "supplierAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            }
+                          ]
+                        },
+                        "pcn": "323425",
+                        "connectionName": "Plex ODBC",
+                        "requestedFlow": {
+                          "id": "customerAddressesFromPlexOdbc",
+                          "active": true,
+                          "pagination": {
+                            "defaultRowLimit": 500
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "context": {},
+                "nextNodes": [
+                  "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "From Flow 3"
+            },
+            "d032e400-0c18-4815-b9e6-99c3c1bde093": {
+              "id": "d032e400-0c18-4815-b9e6-99c3c1bde093",
+              "type": "debugSource",
+              "selected": false,
+              "x": 210,
+              "y": 540,
+              "ports": [
+                {
+                  "id": "cl79gs8as01e0356dyn83tpmb",
+                  "type": "default",
+                  "x": 355.98,
+                  "y": 571.73,
+                  "name": "cl79gs8as01e1356dhig6xt74",
+                  "parentNode": "d032e400-0c18-4815-b9e6-99c3c1bde093",
+                  "links": [
+                    "d4bb69d5-ecf8-4599-a3c5-6bae02b5930e"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "payload": {
+                  "value": {
+                    "CONSTANTS": {
+                      "PARAMETERS": {
+                        "STOP_AFTER_FIRST_IMPORT": false
+                      },
+                      "plexOdbcConfiguration": {
+                        "id": "DEFAULT_PLEX_ODBC_CONFIG",
+                        "dataFlowConfiguration": {
+                          "flows": [
+                            {
+                              "id": "customerStageFromPlexOdbc",
+                              "active": true,
+                              "filters": [
+                                {
+                                  "modifiedAfter": {
+                                    "data": {
+                                      "unit": "day",
+                                      "offset": -1,
+                                      "range": 1,
+                                      "base": "startOf"
+                                    },
+                                    "label": "Yesterday"
+                                  }
+                                }
+                              ],
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "customersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "customerAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "suppliersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "supplierAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            }
+                          ]
+                        },
+                        "pcn": "323425",
+                        "connectionName": "Plex ODBC",
+                        "requestedFlow": {
+                          "id": "suppliersFromPlexOdbc",
+                          "active": true,
+                          "pagination": {
+                            "defaultRowLimit": 500
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "context": {},
+                "nextNodes": [
+                  "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "From Flow 4"
+            },
+            "8fb95407-db40-436d-8b7a-10240e721b26": {
+              "id": "8fb95407-db40-436d-8b7a-10240e721b26",
+              "type": "debugSource",
+              "selected": false,
+              "x": 210,
+              "y": 605,
+              "ports": [
+                {
+                  "id": "cl79gzop701if356dcx9cmo4u",
+                  "type": "default",
+                  "x": 355.98,
+                  "y": 636.73,
+                  "name": "cl79gzop701ig356d5pmcfj8k",
+                  "parentNode": "8fb95407-db40-436d-8b7a-10240e721b26",
+                  "links": [
+                    "069f3b7b-4d63-49f5-b21e-72067d57ff36"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "payload": {
+                  "value": {
+                    "CONSTANTS": {
+                      "PARAMETERS": {
+                        "STOP_AFTER_FIRST_IMPORT": false
+                      },
+                      "plexOdbcConfiguration": {
+                        "id": "DEFAULT_PLEX_ODBC_CONFIG",
+                        "dataFlowConfiguration": {
+                          "flows": [
+                            {
+                              "id": "customerStageFromPlexOdbc",
+                              "active": true,
+                              "filters": [
+                                {
+                                  "modifiedAfter": {
+                                    "data": {
+                                      "unit": "day",
+                                      "offset": -1,
+                                      "range": 1,
+                                      "base": "startOf"
+                                    },
+                                    "label": "Yesterday"
+                                  }
+                                }
+                              ],
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "customersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "customerAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "suppliersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "supplierAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            }
+                          ]
+                        },
+                        "pcn": "323425",
+                        "connectionName": "Plex ODBC",
+                        "requestedFlow": {
+                          "id": "supplierAddressesFromPlexOdbc",
+                          "active": true,
+                          "pagination": {
+                            "defaultRowLimit": 500
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "context": {},
+                "nextNodes": [
+                  "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "From Flow 5"
+            },
+            "e5841a55-c6f2-481a-a79c-fe25fe0b3dc2": {
+              "id": "e5841a55-c6f2-481a-a79c-fe25fe0b3dc2",
+              "type": "debugSource",
+              "selected": false,
+              "x": 210,
+              "y": 670,
+              "ports": [
+                {
+                  "id": "cl79j6nk201k3356dggfqt6rj",
+                  "type": "default",
+                  "x": 355.98,
+                  "y": 701.73,
+                  "name": "cl79j6nk201k4356dxzdnr55h",
+                  "parentNode": "e5841a55-c6f2-481a-a79c-fe25fe0b3dc2",
+                  "links": [
+                    "cf45efa4-c203-47c7-b27c-618be5201239"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "payload": {
+                  "value": {
+                    "CONSTANTS": {
+                      "PARAMETERS": {
+                        "STOP_AFTER_FIRST_IMPORT": false
+                      },
+                      "plexOdbcConfiguration": {
+                        "id": "DEFAULT_PLEX_ODBC_CONFIG",
+                        "dataFlowConfiguration": {
+                          "flows": [
+                            {
+                              "id": "facilitiesFromPlexOdbcBuildings",
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              },
+                              "active": true,
+                              "filters": [
+                                {
+                                  "modifiedAfter": {
+                                    "data": {
+                                      "unit": "month",
+                                      "offset": -1,
+                                      "range": 1,
+                                      "base": "startOf"
+                                    },
+                                    "label": "Previous month"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "id": "customerStageFromPlexOdbc",
+                              "active": true,
+                              "filters": [
+                                {
+                                  "modifiedAfter": {
+                                    "data": {
+                                      "unit": "month",
+                                      "offset": -1,
+                                      "range": 1,
+                                      "base": "startOf"
+                                    },
+                                    "label": "Previous month"
+                                  }
+                                }
+                              ],
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              }
+                            },
+                            {
+                              "id": "customersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              },
+                              "filters": [
+                                {
+                                  "modifiedAfter": {
+                                    "data": {
+                                      "unit": "month",
+                                      "offset": -1,
+                                      "range": 1,
+                                      "base": "startOf"
+                                    },
+                                    "label": "Previous month"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "id": "customerAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              },
+                              "filters": [
+                                {
+                                  "modifiedAfter": {
+                                    "data": {
+                                      "unit": "month",
+                                      "offset": -1,
+                                      "range": 1,
+                                      "base": "startOf"
+                                    },
+                                    "label": "Previous month"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "id": "suppliersFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              },
+                              "filters": [
+                                {
+                                  "modifiedAfter": {
+                                    "data": {
+                                      "unit": "month",
+                                      "offset": -1,
+                                      "range": 1,
+                                      "base": "startOf"
+                                    },
+                                    "label": "Previous month"
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "id": "supplierAddressesFromPlexOdbc",
+                              "active": true,
+                              "pagination": {
+                                "defaultRowLimit": 500
+                              },
+                              "filters": [
+                                {
+                                  "modifiedAfter": {
+                                    "data": {
+                                      "unit": "month",
+                                      "offset": -1,
+                                      "range": 1,
+                                      "base": "startOf"
+                                    },
+                                    "label": "Previous month"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        "pcn": "323425",
+                        "connectionName": "Plex ODBC",
+                        "requestedFlow": {
+                          "id": "facilitiesFromPlexOdbcBuildings",
+                          "pagination": {
+                            "defaultRowLimit": 500
+                          },
+                          "active": true,
+                          "filters": [
+                            {
+                              "modifiedAfter": {
+                                "data": {
+                                  "unit": "month",
+                                  "offset": -1,
+                                  "range": 1,
+                                  "base": "startOf"
+                                },
+                                "label": "Previous month"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                "context": {},
+                "nextNodes": [
+                  "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "From Flow 6"
+            },
+            "9d4715bf-7195-4bd1-a66f-dd9edcc46c2b": {
+              "id": "9d4715bf-7195-4bd1-a66f-dd9edcc46c2b",
+              "type": "debugSource",
+              "selected": false,
+              "x": 205,
+              "y": 735,
+              "ports": [
+                {
+                  "id": "cl79jjr3h01z3356d0phvqxwc",
+                  "type": "default",
+                  "x": 350.98,
+                  "y": 766.73,
+                  "name": "cl79jjr3h01z4356d9eg0po97",
+                  "parentNode": "9d4715bf-7195-4bd1-a66f-dd9edcc46c2b",
+                  "links": [
+                    "96aebdab-4d62-4db1-addd-588f2242fa4d"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "payload": {
+                  "value": {
+                    "PARAMETERS": {
+                      "STOP_AFTER_FIRST_IMPORT": false,
+                      "FLOW_ID": "locationTypeFromPlexOdbc"
+                    },
+                    "plexOdbcConfiguration": {
+                      "id": "DEFAULT_PLEX_ODBC_CONFIG",
+                      "dataFlowConfiguration": {
+                        "flows": [
+                          {
+                            "id": "facilitiesFromPlexOdbcBuildings",
+                            "pagination": {
+                              "defaultRowLimit": 500
+                            },
+                            "active": true,
+                            "filters": [
+                              {
+                                "modifiedAfter": {
+                                  "data": {
+                                    "unit": "month",
+                                    "offset": -1,
+                                    "range": 1,
+                                    "base": "startOf"
+                                  },
+                                  "label": "Previous month"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "id": "locationTypeFromPlexOdbc",
+                            "pagination": {
+                              "defaultRowLimit": 500
+                            },
+                            "active": true,
+                            "filters": [
+                              {
+                                "modifiedAfter": {
+                                  "data": {
+                                    "unit": "month",
+                                    "offset": -1,
+                                    "range": 1,
+                                    "base": "startOf"
+                                  },
+                                  "label": "Previous month"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "id": "customerStageFromPlexOdbc",
+                            "active": true,
+                            "filters": [
+                              {
+                                "modifiedAfter": {
+                                  "data": {
+                                    "unit": "month",
+                                    "offset": -1,
+                                    "range": 1,
+                                    "base": "startOf"
+                                  },
+                                  "label": "Previous month"
+                                }
+                              }
+                            ],
+                            "pagination": {
+                              "defaultRowLimit": 500
+                            }
+                          },
+                          {
+                            "id": "customersFromPlexOdbc",
+                            "active": true,
+                            "pagination": {
+                              "defaultRowLimit": 500
+                            },
+                            "filters": [
+                              {
+                                "modifiedAfter": {
+                                  "data": {
+                                    "unit": "month",
+                                    "offset": -1,
+                                    "range": 1,
+                                    "base": "startOf"
+                                  },
+                                  "label": "Previous month"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "id": "customerAddressesFromPlexOdbc",
+                            "active": true,
+                            "pagination": {
+                              "defaultRowLimit": 500
+                            },
+                            "filters": [
+                              {
+                                "modifiedAfter": {
+                                  "data": {
+                                    "unit": "month",
+                                    "offset": -1,
+                                    "range": 1,
+                                    "base": "startOf"
+                                  },
+                                  "label": "Previous month"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "id": "suppliersFromPlexOdbc",
+                            "active": true,
+                            "pagination": {
+                              "defaultRowLimit": 500
+                            },
+                            "filters": [
+                              {
+                                "modifiedAfter": {
+                                  "data": {
+                                    "unit": "month",
+                                    "offset": -1,
+                                    "range": 1,
+                                    "base": "startOf"
+                                  },
+                                  "label": "Previous month"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "id": "supplierAddressesFromPlexOdbc",
+                            "active": true,
+                            "pagination": {
+                              "defaultRowLimit": 500
+                            },
+                            "filters": [
+                              {
+                                "modifiedAfter": {
+                                  "data": {
+                                    "unit": "month",
+                                    "offset": -1,
+                                    "range": 1,
+                                    "base": "startOf"
+                                  },
+                                  "label": "Previous month"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "pcn": "323425",
+                      "connectionName": "Plex ODBC",
+                      "requestedFlow": {
+                        "id": "locationTypeFromPlexOdbc",
+                        "pagination": {
+                          "defaultRowLimit": 500
+                        },
+                        "active": true,
+                        "filters": [
+                          {
+                            "modifiedAfter": {
+                              "data": {
+                                "unit": "month",
+                                "offset": -1,
+                                "range": 1,
+                                "base": "startOf"
+                              },
+                              "label": "Previous month"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "context": {},
+                "nextNodes": [
+                  "d2f172a8-1a5a-4677-a6a4-5682eb90bcd8"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Source"
+            },
+            "599f05c8-6a7d-4e8c-aeff-10b2d8e5dd7c": {
+              "id": "599f05c8-6a7d-4e8c-aeff-10b2d8e5dd7c",
+              "type": "request",
+              "selected": false,
+              "x": -400,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl7b1ahq50055356dacu8kc3j",
+                  "type": "default",
+                  "x": -254,
+                  "y": 236.73,
+                  "name": "cl7b1ahq50056356dn4s09k51",
+                  "parentNode": "599f05c8-6a7d-4e8c-aeff-10b2d8e5dd7c",
+                  "links": [
+                    "c17df597-14c7-4d58-8eb4-b5d2f36e6831"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Payload",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "nextNodes": [
+                  "a9c2b976-478d-483e-afe1-c61b33297a61"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Request"
+            },
+            "c1b9e7ac-f1bb-4e34-9727-505500f06c8b": {
+              "id": "c1b9e7ac-f1bb-4e34-9727-505500f06c8b",
+              "type": "response",
+              "selected": false,
+              "x": 2030,
+              "y": 145,
+              "ports": [
+                {
+                  "id": "cl7b1ai980057356dxrhvthsg",
+                  "type": "default",
+                  "x": 2022,
+                  "y": 176.73,
+                  "name": "cl7b1ai980058356d993j7ooe",
+                  "parentNode": "c1b9e7ac-f1bb-4e34-9727-505500f06c8b",
+                  "links": [
+                    "5affeba9-c40e-49d6-8558-10dec3f8a317"
+                  ],
+                  "in": true,
+                  "fieldLabel": "Response"
+                },
+                {
+                  "id": "cl7b1ai980059356ds8g6cgqp",
+                  "type": "default",
+                  "x": 2175.98,
+                  "y": 176.73,
+                  "name": "cl7b1ai98005a356d9dhi09pt",
+                  "parentNode": "c1b9e7ac-f1bb-4e34-9727-505500f06c8b",
+                  "links": [],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "responseTransform": "{\n  \"message\": \"Starting Flow with ID: \" & $state.context.CONSTANTS.masterDataFlowConfiguration.requestedFlow.id\n}"
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Response"
+            },
+            "a9c2b976-478d-483e-afe1-c61b33297a61": {
+              "id": "a9c2b976-478d-483e-afe1-c61b33297a61",
+              "type": "log",
+              "selected": false,
+              "x": -225,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl7b1aooz005b356dyn8vkruf",
+                  "type": "default",
+                  "x": -233,
+                  "y": 236.73,
+                  "name": "cl7b1aooz005c356d385r1kfz",
+                  "parentNode": "a9c2b976-478d-483e-afe1-c61b33297a61",
+                  "links": [
+                    "c17df597-14c7-4d58-8eb4-b5d2f36e6831",
+                    "ca1b4475-11bc-483d-a78e-81e611030477"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl7b1aooz005d356d721o44jw",
+                  "type": "default",
+                  "x": -74.59,
+                  "y": 236.73,
+                  "name": "cl7b1aooz005e356di7ypiiz6",
+                  "parentNode": "a9c2b976-478d-483e-afe1-c61b33297a61",
+                  "links": [
+                    "47e8f07a-f81a-4a18-ab96-63e504389ba4"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "messageTransform": "\"Master Data Request Log\"",
+                "level": "Debug",
+                "includeContext": false,
+                "includePayload": true,
+                "nextNodes": [
+                  "7ba37af3-d722-4931-8168-2a6c5b0344bd"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Master Data Request"
+            },
+            "4cbe2721-721c-4e38-bda2-5fdabe8e6f29": {
+              "id": "4cbe2721-721c-4e38-bda2-5fdabe8e6f29",
+              "type": "ifElse",
+              "selected": false,
+              "x": 755,
+              "y": 280,
+              "ports": [
+                {
+                  "id": "cl7b1gjmc00mp356dlu4f2k7u",
+                  "type": "default",
+                  "x": 747,
+                  "y": 311.73,
+                  "name": "cl7b1gjmc00mq356dxh0xg5ag",
+                  "parentNode": "4cbe2721-721c-4e38-bda2-5fdabe8e6f29",
+                  "links": [
+                    "82acd739-cc37-4e53-97ce-c886e34aafa5"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl7b1gjmc00mr356d4bxxe2s6",
+                  "type": "default",
+                  "x": 900.98,
+                  "y": 311.73,
+                  "name": "cl7b1gjmc00ms356dg1keeb9a",
+                  "parentNode": "4cbe2721-721c-4e38-bda2-5fdabe8e6f29",
+                  "links": [
+                    "b015f21e-1cfe-412c-b47a-64a3658789ad"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "True",
+                  "fieldPath": "data.onTrueNextNodes"
+                },
+                {
+                  "id": "cl7b1gjmc00mt356dicy97ptv",
+                  "type": "default",
+                  "x": 900.98,
+                  "y": 336.89,
+                  "name": "cl7b1gjmc00mu356d2ne9d94l",
+                  "parentNode": "4cbe2721-721c-4e38-bda2-5fdabe8e6f29",
+                  "links": [
+                    "7c581348-cd6d-437f-9bc2-40c63785e641"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "False",
+                  "fieldPath": "data.onFalseNextNodes"
+                }
+              ],
+              "data": {
+                "onTrueNextNodes": [
+                  "871ba39f-ed1a-4ee5-911e-a164bbdaeeaa"
+                ],
+                "transform": "$state.context.CONSTANTS.PARAMETERS.STOP_AFTER_IMPORT = false",
+                "onFalseNextNodes": [
+                  "fe00f615-fb9c-48b6-9b8e-9f10be87d0d8"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Do we continue?"
+            },
+            "d933d5ec-570e-462d-9db6-233897dc40d9": {
+              "id": "d933d5ec-570e-462d-9db6-233897dc40d9",
+              "type": "log",
+              "selected": true,
+              "x": 575,
+              "y": 280,
+              "ports": [
+                {
+                  "id": "cl7b1qoou013s356dpem7x180",
+                  "type": "default",
+                  "x": 567,
+                  "y": 311.73,
+                  "name": "cl7b1qoou013t356dmqwszmnn",
+                  "parentNode": "d933d5ec-570e-462d-9db6-233897dc40d9",
+                  "links": [
+                    "0ce57a24-2471-41f2-a76a-ae41b1ceda25"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl7b1qoou013u356dv6lre7uj",
+                  "type": "default",
+                  "x": 721,
+                  "y": 311.73,
+                  "name": "cl7b1qoou013v356dj8byistq",
+                  "parentNode": "d933d5ec-570e-462d-9db6-233897dc40d9",
+                  "links": [
+                    "82acd739-cc37-4e53-97ce-c886e34aafa5"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "messageTransform": "(\n  /* $PRIOR_FLOW_METRICS := {\n    \"STARTED_AT\": $moment().subtract(5,'minutes').format()\n  }; */\n  \n  $PRIOR_FLOW_METRICS := $state.context.PRIOR_FLOW_METRICS;\n    /* FUNCTIONS */\n  $getFlowRunTime := function($startTime, $endTime) {\n    (\n      $isNilOrEmpty($startTime)~>$not and $not($lowercase($moment($startTime).format()) = \"invalid date\") ?\n      (\n        $_start := $coalesce([$parseNumber($moment($startTime).format('x')),0]);\n        $_end := $coalesce([$parseNumber($moment($endTime).format('x')),0]);\n\n        ($_end - $_start) * 0.001;\n        /* \n        {\n          \"start\": $_start,\n          \"end\": $_end,\n          \"total\": ($_end - $_start) * 0.001\n        } \n        */\n      )\n      :\n      0\n    )\n  };\n  \n  $FLOW_STARTED_AT := $moment($PRIOR_FLOW_METRICS.STARTED_AT).format();\n  $ENDED_AT := $now();\n  $FLOW_RUN_TIME := $getFlowRunTime($FLOW_STARTED_AT,$ENDED_AT);\n  \n  $join(\n    [\n      \"Flow ID:\",\n      $state.context.CONSTANTS.masterDataFlowConfiguration.requestedFlow.dataFlow.name,\n      \"completed in\",\n      $string(\n        $FLOW_RUN_TIME = \"0\" ? \"unknown\" : $FLOW_RUN_TIME\n      ),\n      \"seconds\"\n    ],\n    \" \"\n  );\n)",
+                "level": "Info",
+                "includeContext": false,
+                "includePayload": false,
+                "nextNodes": [
+                  "4cbe2721-721c-4e38-bda2-5fdabe8e6f29"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Flow Completed"
+            },
+            "8a1da520-3fa7-45bf-b25e-68c82d997377": {
+              "id": "8a1da520-3fa7-45bf-b25e-68c82d997377",
+              "type": "mutate",
+              "selected": false,
+              "x": 1790,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl7gl838k007h356ddzo8m0j9",
+                  "type": "default",
+                  "x": 1782,
+                  "y": 236.73,
+                  "name": "cl7gl838k007i356d3d88l21a",
+                  "parentNode": "8a1da520-3fa7-45bf-b25e-68c82d997377",
+                  "links": [
+                    "f516c4b7-6faf-4d38-8eb6-b8f9bbde8330"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl7gl838k007j356dbb1cm001",
+                  "type": "default",
+                  "x": 1991.87,
+                  "y": 236.73,
+                  "name": "cl7gl838k007k356d0dsbmwv4",
+                  "parentNode": "8a1da520-3fa7-45bf-b25e-68c82d997377",
+                  "links": [
+                    "5b949484-e9ce-4cb4-b2d5-c388eee89c65",
+                    "5affeba9-c40e-49d6-8558-10dec3f8a317"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "api": "Application",
+                "variablesTransform": "(\n  $toTopicString := function($topicString,$flowId) {\n    (\n      $splitPrefixString := $split($topicString,\".\")~>function($Segments) {\n        $filter([$Segments],function($Segment){\n          $isNilOrEmpty($Segment)~>$not\n        })\n      };\n      \n      $join(\n        [$splitPrefixString,$flowId],\n        \".\"\n      )\n    )\n  };\n\n  {\n    \"payload\": [\n      {\n        \"topic\": {\n          \"name\": $toTopicString(\n            $state.context.CONSTANTS.masterDataFlowConfiguration.topicPrefix,\n            $.CONSTANTS.masterDataFlowConfiguration.requestedFlow.id\n          )\n        },\n        \"messages\": [\n          {\n            \"value\": $\n          }\n        ]\n      }\n    ]\n  };\n)",
+                "mutation": "mutation publishMessage(\n  $payload:[PublishMessagePayloadInput!]!\n){\n  publishMessages(payload:$payload) {\n    topic {\n      name\n    }\n  }\n}",
+                "nextNodes": [
+                  "d6f30ec2-9ca2-4437-9854-ee468460739d",
+                  "c1b9e7ac-f1bb-4e34-9727-505500f06c8b"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": true,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Publish Message to Start Flow"
+            },
+            "d6f30ec2-9ca2-4437-9854-ee468460739d": {
+              "id": "d6f30ec2-9ca2-4437-9854-ee468460739d",
+              "type": "log",
+              "selected": false,
+              "x": 2030,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl7gls47b00jk356dny3qqjjo",
+                  "type": "default",
+                  "x": 2022,
+                  "y": 236.73,
+                  "name": "cl7gls47b00jl356dq0ike444",
+                  "parentNode": "d6f30ec2-9ca2-4437-9854-ee468460739d",
+                  "links": [
+                    "5b949484-e9ce-4cb4-b2d5-c388eee89c65"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl7gls47b00jm356dmt6kv6iq",
+                  "type": "default",
+                  "x": 2176,
+                  "y": 236.73,
+                  "name": "cl7gls47b00jn356dj0mcfo5q",
+                  "parentNode": "d6f30ec2-9ca2-4437-9854-ee468460739d",
+                  "links": [],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "messageTransform": "$join(\n  [\n    \"Flow ID:\",\n    $state.context.CONSTANTS.masterDataFlowConfiguration.requestedFlow.dataFlow.name,\n    \"has been started\"\n  ],\n  \" \"\n)",
+                "level": "Info",
+                "includeContext": false,
+                "includePayload": false
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Log Flow Start"
+            },
+            "f3c5e11e-c754-4d01-8622-8d1e0789c1be": {
+              "id": "f3c5e11e-c754-4d01-8622-8d1e0789c1be",
+              "type": "debugSource",
+              "selected": false,
+              "x": -635,
+              "y": -270,
+              "ports": [
+                {
+                  "id": "cl7te12ru00dj356dxxayfn02",
+                  "type": "default",
+                  "x": -300.52,
+                  "y": -238.27,
+                  "name": "cl7te12ru00dk356d6px206lf",
+                  "parentNode": "f3c5e11e-c754-4d01-8622-8d1e0789c1be",
+                  "links": [
+                    "ed970c59-c943-43a5-8e32-9f44bb599fda"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "payload": {
+                  "masterDataFlowConfigId": "DEFAULT_PLEX_ODBC_CONFIG"
+                },
+                "context": {},
+                "nextNodes": [
+                  "dbc2db13-d079-47c7-8433-c1a00517ac09"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Base Execution To Start Master Data Flow on Schedule"
+            },
+            "dbc2db13-d079-47c7-8433-c1a00517ac09": {
+              "id": "dbc2db13-d079-47c7-8433-c1a00517ac09",
+              "type": "executeFlow",
+              "selected": false,
+              "x": -240,
+              "y": -225,
+              "ports": [
+                {
+                  "id": "cl7te5hbg00fd356dcf3fqxfb",
+                  "type": "default",
+                  "x": -248,
+                  "y": -193.27,
+                  "name": "cl7te5hbg00fe356dbv9muum3",
+                  "parentNode": "dbc2db13-d079-47c7-8433-c1a00517ac09",
+                  "links": [
+                    "22ad009a-ef38-4829-a2ad-24f4214df807",
+                    "ed970c59-c943-43a5-8e32-9f44bb599fda"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl7te5hbg00ff356d9uql30di",
+                  "type": "default",
+                  "x": 177.75,
+                  "y": -193.27,
+                  "name": "cl7te5hbg00fg356d7oizt6kj",
+                  "parentNode": "dbc2db13-d079-47c7-8433-c1a00517ac09",
+                  "links": [],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "flowId": "masterDataConfigurationFlow",
+                "payloadTransform": "{\n  \"masterDataFlowConfigId\": masterDataFlowConfigId,\n  \"stopAfterImport\": stopAfterImport,\n  \"dataFlowToRun\": dataFlowToRun\n}"
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Execute Flow (DO NOT ADD SCHEDULES HERE. THIS IS AN EXAMPLE)"
+            },
+            "97ea1193-79be-43b2-a2b3-b7b4487d9e45": {
+              "id": "97ea1193-79be-43b2-a2b3-b7b4487d9e45",
+              "type": "debugSource",
+              "selected": false,
+              "x": -540,
+              "y": -205,
+              "ports": [
+                {
+                  "id": "cl7te6tm000ka356dv10jplug",
+                  "type": "default",
+                  "x": -306.05,
+                  "y": -173.27,
+                  "name": "cl7te6tm100kb356d5cq3lmir",
+                  "parentNode": "97ea1193-79be-43b2-a2b3-b7b4487d9e45",
+                  "links": [
+                    "22ad009a-ef38-4829-a2ad-24f4214df807"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "payload": {
+                  "masterDataFlowConfigId": "DEFAULT_PLEX_ODBC_CONFIG",
+                  "stopAfterImport": true,
+                  "dataFlowToRun": "contactsFromPlexOdbc"
+                },
+                "context": {},
+                "nextNodes": [
+                  "dbc2db13-d079-47c7-8433-c1a00517ac09"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Execution to Start an Individual Flow"
+            },
+            "7ba37af3-d722-4931-8168-2a6c5b0344bd": {
+              "id": "7ba37af3-d722-4931-8168-2a6c5b0344bd",
+              "type": "validate",
+              "selected": false,
+              "x": -40,
+              "y": 205,
+              "ports": [
+                {
+                  "id": "cl7te993p00ny356dwgnhgt4q",
+                  "type": "default",
+                  "x": -48,
+                  "y": 236.73,
+                  "name": "cl7te993p00nz356d9tj9d6ju",
+                  "parentNode": "7ba37af3-d722-4931-8168-2a6c5b0344bd",
+                  "links": [
+                    "47e8f07a-f81a-4a18-ab96-63e504389ba4"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl7te993p00o0356d61u8vb8q",
+                  "type": "default",
+                  "x": 106,
+                  "y": 236.73,
+                  "name": "cl7te993p00o1356dkdq800d6",
+                  "parentNode": "7ba37af3-d722-4931-8168-2a6c5b0344bd",
+                  "links": [
+                    "1ba10ee6-9da9-47bc-bfb9-e74ffad1b142"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "masterDataFlowConfigId": {
+                      "type": "string"
+                    },
+                    "stopAfterImport": {
+                      "type": "boolean"
+                    },
+                    "dataFlowToRun": {
+                      "type": "string"
+                    },
+                    "ignoreModifiedAfter": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "masterDataFlowConfigId"
+                  ],
+                  "additionalProperties": false
+                },
+                "nextNodes": [
+                  "2fddabf6-c831-4a1e-a9dc-27599b0b7bb7"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Validate Request"
+            },
+            "6544a26b-5464-466b-bf0c-ff174f44ee3b": {
+              "id": "6544a26b-5464-466b-bf0c-ff174f44ee3b",
+              "type": "debugSource",
+              "selected": false,
+              "x": -590,
+              "y": 135,
+              "ports": [
+                {
+                  "id": "cl7th16g300qs356d2sqnz7sl",
+                  "type": "default",
+                  "x": -255.52,
+                  "y": 166.73,
+                  "name": "cl7th16g300qt356d0gy7e7vn",
+                  "parentNode": "6544a26b-5464-466b-bf0c-ff174f44ee3b",
+                  "links": [
+                    "ca1b4475-11bc-483d-a78e-81e611030477"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "payload": {
+                  "masterDataFlowConfigId": "DEFAULT_PLEX_ODBC_CONFIG",
+                  "ignoreModifiedAfter": true,
+                  "dataFlowToRun": "contactsFromPlexOdbc"
+                },
+                "context": {},
+                "nextNodes": [
+                  "a9c2b976-478d-483e-afe1-c61b33297a61"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Base Execution To Start Master Data Flow on Schedule"
+            },
+            "f2687c70-42c1-4c95-8056-efb7cf1f5e14": {
+              "id": "f2687c70-42c1-4c95-8056-efb7cf1f5e14",
+              "type": "ifElse",
+              "selected": false,
+              "x": 600,
+              "y": 85,
+              "ports": [
+                {
+                  "id": "cl7tluth500f5356d8qr1gzcc",
+                  "type": "default",
+                  "x": 592,
+                  "y": 116.73,
+                  "name": "cl7tluth500f6356dgstujthm",
+                  "parentNode": "f2687c70-42c1-4c95-8056-efb7cf1f5e14",
+                  "links": [
+                    "4d85e38e-cce2-4607-9d55-e678543bf9db"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl7tluth500f7356dzol5l761",
+                  "type": "default",
+                  "x": 910.83,
+                  "y": 116.73,
+                  "name": "cl7tluth500f8356d45z167g3",
+                  "parentNode": "f2687c70-42c1-4c95-8056-efb7cf1f5e14",
+                  "links": [
+                    "2922bab9-074c-4edb-8f85-9ac7662b02d1"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "True",
+                  "fieldPath": "data.onTrueNextNodes"
+                },
+                {
+                  "id": "cl7tluth500f9356dr3tlw56o",
+                  "type": "default",
+                  "x": 910.83,
+                  "y": 141.89,
+                  "name": "cl7tluth500fa356d9ff8v09f",
+                  "parentNode": "f2687c70-42c1-4c95-8056-efb7cf1f5e14",
+                  "links": [
+                    "c85922ce-17d6-444d-bc75-740ad709ef36"
+                  ],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "False",
+                  "fieldPath": "data.onFalseNextNodes"
+                }
+              ],
+              "data": {
+                "onFalseNextNodes": [
+                  "f9cfbf51-49b3-495e-af76-2c664eeffd5d"
+                ],
+                "transform": "$count(masterDataFlowConfiguration.edges[0].node) = 1",
+                "onTrueNextNodes": [
+                  "ad3d66a2-e44d-4e18-930b-23d3f1fad7b2"
+                ]
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Was the requested master data flow config found?"
+            },
+            "f9cfbf51-49b3-495e-af76-2c664eeffd5d": {
+              "id": "f9cfbf51-49b3-495e-af76-2c664eeffd5d",
+              "type": "transform",
+              "selected": false,
+              "x": 965,
+              "y": 110,
+              "ports": [
+                {
+                  "id": "cl7tlv7as00gi356d0uv48emn",
+                  "type": "default",
+                  "x": 957,
+                  "y": 141.73,
+                  "name": "cl7tlv7as00gj356da6507j0q",
+                  "parentNode": "f9cfbf51-49b3-495e-af76-2c664eeffd5d",
+                  "links": [
+                    "c85922ce-17d6-444d-bc75-740ad709ef36"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl7tlv7as00gk356dp4l5gl6o",
+                  "type": "default",
+                  "x": 1305,
+                  "y": 141.73,
+                  "name": "cl7tlv7as00gl356du8pkb5f4",
+                  "parentNode": "f9cfbf51-49b3-495e-af76-2c664eeffd5d",
+                  "links": [],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "transform": "$throw(\n  \"The requested Master Data Flow Configuration: \" & $state.context.CONSTANTS.PARAMETERS.MASTER_DATA_FLOW_CONFIG_ID & \" is either not active or not setup.\",\n  {\n    \"info\": $state.context\n  }\n)"
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Throw Error for Inactive Master Data Flow Configuration"
+            },
+            "101d2d12-3fc2-4f8b-8dd7-217a20c4de1c": {
+              "id": "101d2d12-3fc2-4f8b-8dd7-217a20c4de1c",
+              "type": "transform",
+              "selected": false,
+              "x": 1790,
+              "y": 140,
+              "ports": [
+                {
+                  "id": "cl7v00z4100ry356en1s8f6j5",
+                  "type": "default",
+                  "x": 1782,
+                  "y": 171.73,
+                  "name": "cl7v00z4100rz356eq2teozux",
+                  "parentNode": "101d2d12-3fc2-4f8b-8dd7-217a20c4de1c",
+                  "links": [
+                    "5c6c8f72-ae25-496d-bd22-570c75aba643"
+                  ],
+                  "in": true
+                },
+                {
+                  "id": "cl7v00z4100s0356egdev2y3n",
+                  "type": "default",
+                  "x": 1936,
+                  "y": 171.73,
+                  "name": "cl7v00z4100s1356eyh8zfivx",
+                  "parentNode": "101d2d12-3fc2-4f8b-8dd7-217a20c4de1c",
+                  "links": [],
+                  "in": false,
+                  "groupIndex": null,
+                  "groupPath": null,
+                  "fieldLabel": "Output",
+                  "fieldPath": "data.nextNodes"
+                }
+              ],
+              "data": {
+                "transform": "{\n  \"value\": $\n}"
+              },
+              "debug": {
+                "breakpointEnabled": false,
+                "publishSubscribeClient": false,
+                "publishToMFGx": false
+              },
+              "logging": {
+                "executionMetrics": false,
+                "executionStarted": false,
+                "executionSucceeded": false,
+                "executionFailed": true
+              },
+              "name": "Wrap in Value",
+              "note": "Link this to the Format Publish if you need to wrap in value"
+            }
+          }
+        }
+      ],
+      "name": "Master Data Configuration Flow",
+      "type": "System",
+      "version": "0.0.12-0",
+      "walkthrough": {
+        "steps": []
+      }
+    }
+  }
+}
