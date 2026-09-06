@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Master Data Flow Config Package &mdash; Fuuz Accelerator</title>
+<meta name="description" content="Fuuz accelerator: Master data flow configuration â€” scheduled ERP import orchestration">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://accelerators.fuuz.com/package-master-data-flow-config-accelerator/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://accelerators.fuuz.com/package-master-data-flow-config-accelerator/">
+<meta property="og:site_name" content="Fuuz Accelerators">
+<meta property="og:title" content="Master Data Flow Config Package &mdash; Fuuz Accelerator">
+<meta property="og:description" content="Fuuz accelerator: Master data flow configuration â€” scheduled ERP import orchestration">
+<link rel="icon" href="assets/appicon-violet.svg">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="prose.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "Master Data Flow Config Package",
+  "url": "https://accelerators.fuuz.com/package-master-data-flow-config-accelerator/",
+  "description": "Fuuz accelerator: Master data flow configuration \u00e2\u20ac\u201d scheduled ERP import orchestration",
+  "codeRepository": "https://github.com/Fuuz-Platform/package-master-data-flow-config-accelerator",
+  "applicationCategory": "BusinessApplication",
+  "runtimePlatform": "Fuuz",
+  "author": {
+    "@type": "Organization",
+    "name": "Fuuz",
+    "url": "https://fuuz.com"
+  }
+}
+</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="logo" href="../"><img src="assets/logo-horizontal-on-midnight.svg" alt="Fuuz"></a>
+    <span class="section">Accelerators</span>
+    <nav><a href="#overview">Overview</a><a href="#package-contents">Package Contents</a><a href="#data-models">Data Models</a><a href="https://github.com/Fuuz-Platform/package-master-data-flow-config-accelerator">GitHub</a></nav>
+  </div>
+</header>
+<main>
+<div class="wrap hero">
+  <p class="eyebrow">Accelerator &middot; Integration package</p>
+  <h1>Master Data Flow Config <span class="accent">Package</span></h1>
+  <p class="lede">Fuuz accelerator: Master data flow configuration â€” scheduled ERP import orchestration</p>
+  <div class="ctas">
+    <a class="cta cta-primary" href="https://github.com/Fuuz-Platform/package-master-data-flow-config-accelerator">Get the package</a>
+    <a class="cta cta-secondary" href="../">All accelerators</a>
+  </div>
+</div>
+<section>
+  <div class="wrap prose">
+<p><strong>Version:</strong> 1.0.1
+<strong>Platform:</strong> Fuuz ≥ 2023.11.2
+<strong>Spec Version:</strong> 2.0.0</p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>The Master Data Flow Configuration package provides the orchestration layer for scheduling and managing bulk master data imports from external ERP and datasource systems into Fuuz. It introduces a <code>MasterDataFlowConfiguration</code> model — a registry of all active import flows — and wraps it with a scheduler, dispatcher flow, and management screens. Any import flow that should run on a recurring schedule (e.g., syncing products, workcenters, customers from Plex, NetSuite, or another ERP) is registered here and managed centrally.</p>
+<p>This is a low-level infrastructure package, typically installed once per environment and consumed by connector-specific packages like <code>package-plex-odbc-master-config-accelerator</code> or <code>package-mes-netsuite-accelerator</code>.</p>
+<hr />
+<h2 id="package-contents">Package Contents</h2>
+<pre><code>master-data-flow-config/
+├── manifest.json
+├── definition.json
+├── package-data.json
+├── data/                        2 seed data files
+├── dataFlows/                   4 flows
+├── dataModels/                  2 models
+├── savedTransforms/             2 reusable transforms
+└── screens/                     6 screens
+</code></pre>
+<hr />
+<h2 id="data-models">Data Models</h2>
+<h3>MasterDataFlowConfiguration</h3>
+<p>The core scheduling registry. Each record represents one import flow to be run on a schedule.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>active</code></td>
+<td>Boolean!</td>
+<td>Whether this import is enabled; inactive records are skipped by the scheduler</td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td>String</td>
+<td>Auto-generated display label set by update trigger as <code>{Connector Name} - {Connection Name}</code></td>
+</tr>
+<tr>
+<td><code>connectionId</code></td>
+<td>String</td>
+<td>The Fuuz <code>Connection</code> record ID to use for this import</td>
+</tr>
+<tr>
+<td><code>topic</code></td>
+<td>String</td>
+<td>Pub/sub topic string formatted as <code>{SystemName}.{Source}.import</code> — used for subscriber-based dispatch</td>
+</tr>
+<tr>
+<td><code>dataFlowId</code></td>
+<td>String</td>
+<td>The target integration flow to execute for this import</td>
+</tr>
+<tr>
+<td><code>schedule</code></td>
+<td>JSON</td>
+<td>Cron or interval schedule definition</td>
+</tr>
+<tr>
+<td><code>lastRunAt</code></td>
+<td>DateTime</td>
+<td>Timestamp of the last successful execution</td>
+</tr>
+<tr>
+<td><code>lastRunStatus</code></td>
+<td>String</td>
+<td>Status code from the last run (success, error, etc.)</td>
+</tr>
+</tbody>
+</table></div>
+<p>The update trigger automatically resolves and caches the connector name and connection name into <code>label</code> whenever <code>connectionId</code> changes. <code>dataChangeCapture</code> is enabled with 120-day retention (exposed) for audit streaming.</p>
+<h3>Supporting Configuration Schema Model</h3>
+<p>A companion model storing JSON schema definitions for import payload validation and connector-specific configuration metadata.</p>
+<hr />
+<h2 id="data-flows-4">Data Flows (4)</h2>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Flow</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Master Data Import Scheduler</td>
+<td>System</td>
+<td>Periodic trigger; queries all active <code>MasterDataFlowConfiguration</code> records and dispatches each to its configured import flow</td>
+</tr>
+<tr>
+<td>Master Data Import Dispatcher</td>
+<td>System</td>
+<td>Receives a single configuration record and executes the target <code>dataFlowId</code> with the configured connection context</td>
+</tr>
+<tr>
+<td>Master Data Configuration Sync</td>
+<td>Integration</td>
+<td>Routes inbound import requests by pub/sub <code>topic</code> pattern to the correct handler</td>
+</tr>
+<tr>
+<td>Master Data Status Update</td>
+<td>System</td>
+<td>Updates <code>lastRunAt</code> and <code>lastRunStatus</code> on the configuration record after each import run completes</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="screens-6">Screens (6)</h2>
+<ul>
+<li><strong>Configuration List</strong> — Table view of all import configurations with active status and last-run timestamps</li>
+<li><strong>Configuration Form</strong> — Create/edit form for individual records; includes connection picker, flow selector, and schedule builder</li>
+<li><strong>Import Run History</strong> — Timeline view of recent execution logs per configuration</li>
+<li><strong>Manual Trigger</strong> — On-demand execution screen to run a specific import outside the schedule</li>
+<li><strong>Bulk Enable/Disable</strong> — Administrative screen to toggle active status on multiple configurations at once</li>
+<li><strong>Import Status Dashboard</strong> — Summary view of all imports with health indicators (last run status, run age, error counts)</li>
+</ul>
+<hr />
+<h2 id="installation">Installation</h2>
+<ol>
+<li>Import via Fuuz Package Manager</li>
+<li>Ensure at least one <code>Connection</code> record exists for the target ERP/datasource</li>
+<li>Install connector-specific packages (e.g., <code>package-plex-odbc-master-config-accelerator</code>) — their flows will self-register into <code>MasterDataFlowConfiguration</code> records or can be added manually</li>
+<li>Configure schedules per import via the Configuration Form screen</li>
+<li>Enable desired imports by setting <code>active = true</code></li>
+</ol>
+<hr />
+<h2 id="dependencies">Dependencies</h2>
+<ul>
+<li><strong>Fuuz Platform</strong> ≥ 2023.11.2</li>
+<li><strong>Scheduler module</strong> — required for the periodic import dispatcher</li>
+<li><strong>Pub/Sub module</strong> — required for topic-based dispatch routing</li>
+<li>One or more ERP connector packages (e.g., <code>package-plex-odbc-master-config-accelerator</code>)</li>
+</ul>
+<hr />
+<p><em>Built on the <a href="https://fuuz.com">Fuuz Industrial Operations Platform</a></em></p>
+  </div>
+</section>
+</main>
+<footer>
+  <div class="wrap">
+    <p>Fuuz&reg; is an Enterprise Industrial Intelligence Platform.
+      <a href="https://accelerators.fuuz.com/">All accelerators</a> &middot;
+      <a href="https://github.com/Fuuz-Platform/package-master-data-flow-config-accelerator">Source</a> &middot;
+      <a href="https://fuuz.com">fuuz.com</a></p>
+  </div>
+</footer>
+</body>
+</html>
